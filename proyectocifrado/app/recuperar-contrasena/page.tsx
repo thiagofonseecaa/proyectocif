@@ -4,6 +4,8 @@ import MarcaSeguridad from '../componentes/MarcaSeguridad';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { revisarMfaRecuperacion, verificarMfaRecuperacion } from '../../lib/recuperacionMfa';
+import { nombreAutenticador } from '../componentes/nombreAutenticador';
 
 type Recovery = { client: SupabaseClient; userId: string; email: string };
 type Start = { client: SupabaseClient; recovery: Recovery | null; invalid: boolean };
@@ -31,7 +33,9 @@ async function abrirEnlace(): Promise<Start> {
 }
 
 export default function RecuperarContrasena() {
-  const [phase, setPhase] = useState<'loading' | 'request' | 'change' | 'done'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'request' | 'mfa' | 'change' | 'done'>('loading');
+  const [factores, setFactores] = useState<{ id: string; friendly_name?: string }[]>([]);
+  const [factor, setFactor] = useState(''), [codigo, setCodigo] = useState('');
   const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [repeat, setRepeat] = useState('');
   const [visible, setVisible] = useState(false), [busy, setBusy] = useState(false), [wait, setWait] = useState(0);
   const [error, setError] = useState(''), [notice, setNotice] = useState('');
@@ -43,13 +47,21 @@ export default function RecuperarContrasena() {
     let active = true; alive.current = true;
     // Strict Mode puede ejecutar el efecto dos veces; el enlace se consume una sola vez.
     init.current ??= abrirEnlace();
-    void init.current.then(result => {
+    void init.current.then(async result => {
       if (!active) return;
       client.current = result.client; recovery.current = result.recovery;
       setClienteListo(true);
       if (result.invalid) setError('El enlace no es válido, ya se usó o venció. Solicitá uno nuevo.');
       if (result.recovery) setEmail(result.recovery.email);
-      setPhase(result.recovery ? 'change' : 'request');
+      if (!result.recovery) { setPhase('request'); return; }
+      try {
+        const state = await revisarMfaRecuperacion(result.client, result.recovery.userId);
+        if (!active) return;
+        setFactores(state.factors); setFactor(state.factors[0]?.id || '');
+        setPhase(state.required ? 'mfa' : 'change');
+      } catch {
+        if (active) { setPhase('mfa'); setError('No pudimos comprobar la verificación en dos pasos. Pulsá Reintentar.'); }
+      }
     }).catch(() => { if (active) { setError('No se pudo iniciar la recuperación. Recargá la página e intentá nuevamente.'); setPhase('request'); } });
     return () => { active = false; alive.current = false; };
   }, []);
@@ -80,6 +92,22 @@ export default function RecuperarContrasena() {
     finally { lock.current = false; if (alive.current) setBusy(false); }
   }
 
+  async function comprobarCodigo(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    const access = recovery.current;
+    if (lock.current || !access) return;
+    lock.current = true; setBusy(true); setError('');
+    try {
+      if (factores.length) await verificarMfaRecuperacion(access.client, access.userId, factor, codigo);
+      const state = await revisarMfaRecuperacion(access.client, access.userId);
+      if (!alive.current) return;
+      setFactores(state.factors); setFactor(state.factors[0]?.id || ''); setCodigo('');
+      setPhase(state.required ? 'mfa' : 'change');
+    } catch (failure) {
+      if (alive.current) { setCodigo(''); setError(failure instanceof Error ? failure.message : 'No se pudo verificar. Reintentá.'); }
+    } finally { lock.current = false; if (alive.current) setBusy(false); }
+  }
+
   async function guardar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current || !recovery.current || phase !== 'change') return;
@@ -93,10 +121,21 @@ export default function RecuperarContrasena() {
         recovery.current = null; setPassword(''); setRepeat(''); setPhase('request');
         setError('La sesión de recuperación venció. Solicitá otro enlace.'); return;
       }
+      const state = await revisarMfaRecuperacion(access.client, access.userId);
+      if (!alive.current) return;
+      if (state.required) {
+        setFactores(state.factors); setFactor(state.factors[0]?.id || '');
+        setPassword(''); setRepeat(''); setVisible(false); setPhase('mfa');
+        setError('Confirmá tu código de autenticador antes de cambiar la contraseña.'); return;
+      }
       const result = await access.client.auth.updateUser({ password });
       if (!alive.current) return;
       if (result.error) {
-        if (result.error.code === 'same_password') setError('Elegí una contraseña diferente de la anterior.');
+        if (result.error.code === 'insufficient_aal') {
+          setPassword(''); setRepeat(''); setVisible(false); setFactores([]); setCodigo(''); setPhase('mfa');
+          setError('Es necesario verificar el autenticador. Pulsá Reintentar.');
+        }
+        else if (result.error.code === 'same_password') setError('Elegí una contraseña diferente de la anterior.');
         else if (result.error.code === 'weak_password') setError('La contraseña no cumple los requisitos del servicio. Elegí una frase más larga y difícil de adivinar.');
         else setError('No se pudo actualizar la contraseña. Intentá nuevamente o solicitá otro enlace.');
         return;
@@ -113,7 +152,7 @@ export default function RecuperarContrasena() {
     <section className="w-full max-w-md rounded-2xl border border-slate-800 bg-gray-900 p-6 sm:p-8">
       <p className="text-xs uppercase tracking-widest text-blue-400 mb-3">Sistema de Cifrado</p>
       <MarcaSeguridad />
-        <h1 className="text-2xl font-semibold">{phase === 'change' ? 'Elegí tu nueva contraseña' : phase === 'done' ? 'Contraseña actualizada' : 'Recuperar mi cuenta'}</h1>
+        <h1 className="text-2xl font-semibold">{phase === 'mfa' ? 'Confirmá que sos vos' : phase === 'change' ? 'Elegí tu nueva contraseña' : phase === 'done' ? 'Contraseña actualizada' : 'Recuperar mi cuenta'}</h1>
       {phase === 'loading' && <p role="status" className="mt-5 text-sm text-slate-400">Comprobando el enlace…</p>}
       {phase === 'request' && <>
         <p className="mt-3 text-sm text-slate-400">Ingresá el correo con el que te registraste. Te enviaremos un enlace para elegir una contraseña nueva.</p>
@@ -121,6 +160,15 @@ export default function RecuperarContrasena() {
           <div><label htmlFor="email" className="text-sm">Correo electrónico</label><input id="email" type="email" autoComplete="email" required disabled={busy} value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" className={input} /></div>
           <button disabled={busy || wait > 0 || !clienteListo} className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 py-3 font-medium text-sm disabled:opacity-50">{busy ? 'Enviando…' : wait > 0 ? 'Podés reenviar en ' + wait + ' s' : 'Enviar enlace por correo'}</button>
         </form>
+      </>}
+      {phase === 'mfa' && <>
+        <p className="mt-3 text-sm text-slate-300">Tu cuenta tiene verificación en dos pasos. Ingresá el código actual de tu autenticador para elegir una contraseña nueva.</p>
+        {factores.length ? <form onSubmit={comprobarCodigo} className="mt-6 space-y-5">
+          {factores.length > 1 ? <label className="block text-sm">Autenticador<select disabled={busy} value={factor} onChange={e => { setFactor(e.target.value); setCodigo(''); }} className={input}>{factores.map((f, i) => <option key={f.id} value={f.id}>{nombreAutenticador(f.friendly_name, i)}</option>)}</select></label> : <p className="text-sm text-blue-300">{nombreAutenticador(factores[0].friendly_name)}</p>}
+          <div><label htmlFor="recovery-code" className="text-sm">Código de seis dígitos</label><input id="recovery-code" autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} placeholder="000000" required disabled={busy} value={codigo} onChange={e => setCodigo(e.target.value.replace(/\D/g, ''))} className={input} /></div>
+          <button disabled={busy || codigo.length !== 6} className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 py-3 text-sm font-medium disabled:opacity-50">{busy ? 'Verificando…' : 'Verificar y continuar'}</button>
+        </form> : <button disabled={busy} onClick={() => void comprobarCodigo()} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 disabled:opacity-50">{busy ? 'Comprobando…' : 'Reintentar'}</button>}
+        <p className="mt-4 text-xs text-slate-400">Si perdiste el autenticador, usá el de respaldo. Si no tenés acceso a ninguno, contactá al administrador para verificar tu identidad. El correo no desactiva el 2FA.</p>
       </>}
       {phase === 'change' && <>
         <p className="mt-3 text-sm text-slate-400 break-all">Vas a actualizar el acceso de {email}. No necesitás la contraseña anterior.</p>
