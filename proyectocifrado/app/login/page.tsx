@@ -1,0 +1,137 @@
+'use client';
+import MarcaSeguridad from '../componentes/MarcaSeguridad';
+
+import { useState } from 'react';
+import { supabase } from '../../lib/supabase';
+
+function evaluarContrasena(password: string) {
+  let puntaje = 0;
+  if (password.length >= 8) puntaje++;
+  if (password.length >= 12) puntaje++;
+  if (/[A-Z]/.test(password)) puntaje++;
+  if (/[0-9]/.test(password)) puntaje++;
+  if (/[^A-Za-z0-9]/.test(password)) puntaje++;
+
+  if (puntaje <= 1) return { nivel: 'Muy debil', color: '#ef4444', ancho: '20%' };
+  if (puntaje === 2) return { nivel: 'Debil', color: '#f97316', ancho: '40%' };
+  if (puntaje === 3) return { nivel: 'Media', color: '#eab308', ancho: '60%' };
+  if (puntaje === 4) return { nivel: 'Fuerte', color: '#3b82f6', ancho: '80%' };
+  return { nivel: 'Muy fuerte', color: '#22c55e', ancho: '100%' };
+}
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [esRegistro, setEsRegistro] = useState(false);
+  const [mensaje, setMensaje] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [verPassword, setVerPassword] = useState(false);
+
+  const fortaleza = password ? evaluarContrasena(password) : null;
+
+  const handleSubmit = async () => {
+    if (cargando) return;
+    if (!email.trim() || !password) {
+      setMensaje('Ingresá tu correo y contraseña.');
+      return;
+    }
+    if (esRegistro && password.length < 12) {
+      setMensaje('La contraseña debe tener al menos 12 caracteres. Podés usar una frase larga.');
+      return;
+    }
+    setCargando(true);
+    setMensaje('');
+    try {
+    if (esRegistro) {
+      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+      if (error) setMensaje('Error: ' + error.message);
+      else setMensaje(data.session ? 'Cuenta creada. Ya podés iniciar sesión.' : 'Revisá tu correo y confirmá tu cuenta antes de iniciar sesión. Si no aparece, mirá la carpeta de spam.');
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) setMensaje('Error: ' + error.message);
+      else window.location.replace('/chat');
+    }
+    } catch {
+      setMensaje('No pudimos conectar. Revisá tu conexión y volvé a intentar.');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  return (
+    <main className="auth-shell min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-sm bg-gray-900 rounded-xl border border-gray-800 p-8">
+        <MarcaSeguridad />
+        <h1 className="text-2xl font-semibold mb-1 text-center">Sistema de Cifrado</h1>
+        <p className="text-gray-500 text-sm mb-8 text-center">E.E.T. N°3139</p>
+
+        <div className="flex gap-2 mb-6">
+          <button onClick={() => { setEsRegistro(false); setMensaje(''); }}
+            className={`flex-1 py-2 rounded-lg text-sm ${!esRegistro ? 'bg-blue-600 text-white' : 'border border-gray-700 text-gray-400'}`}>
+            Iniciar sesion
+          </button>
+          <button onClick={() => { setEsRegistro(true); setMensaje(''); }}
+            className={`flex-1 py-2 rounded-lg text-sm ${esRegistro ? 'bg-blue-600 text-white' : 'border border-gray-700 text-gray-400'}`}>
+            Registrarse
+          </button>
+        </div>
+
+        <label className="text-xs text-gray-500">Email</label>
+        <input value={email} onChange={e => setEmail(e.target.value)}
+          type="email" placeholder="tu@email.com"
+          className="w-full mt-1 mb-4 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500" />
+
+        <label className="text-xs text-gray-500">Contrasena</label>
+        <div className="relative mt-1">
+          <input value={password} onChange={e => setPassword(e.target.value)}
+            type={verPassword ? 'text' : 'password'}
+            placeholder="••••••••"
+            className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 pr-10 text-sm focus:outline-none focus:border-blue-500" />
+          <button
+            onClick={() => setVerPassword(!verPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs">
+            {verPassword ? 'Ocultar' : 'Ver'}
+          </button>
+        </div>
+
+        {fortaleza && (
+          <div className="mt-2">
+            <div className="w-full bg-gray-800 rounded-full h-1.5">
+              <div style={{ width: fortaleza.ancho, backgroundColor: fortaleza.color, height: '6px', borderRadius: '9999px', transition: 'all 0.3s' }}></div>
+            </div>
+            <p style={{ color: fortaleza.color }} className="text-xs mt-1">{fortaleza.nivel}</p>
+          </div>
+        )}
+
+        {esRegistro && (
+          <div className="mt-3 mb-4 bg-gray-950 border border-gray-800 rounded-lg p-3">
+            <p className="text-xs text-gray-500 mb-2 font-medium">Para una contrasena segura:</p>
+            <ul className="space-y-1">
+              <li className={`text-xs flex items-center gap-2 ${password.length >= 12 ? 'text-green-400' : 'text-gray-600'}`}>
+                {password.length >= 12 ? '✓' : '○'} Al menos 12 caracteres
+              </li>
+              <li className={`text-xs flex items-center gap-2 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`}>
+                {/[A-Z]/.test(password) ? '✓' : '○'} Una letra mayuscula (ej: A, B, C)
+              </li>
+              <li className={`text-xs flex items-center gap-2 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`}>
+                {/[0-9]/.test(password) ? '✓' : '○'} Un numero (ej: 1, 2, 3)
+              </li>
+              <li className={`text-xs flex items-center gap-2 ${/[^A-Za-z0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`}>
+                {/[^A-Za-z0-9]/.test(password) ? '✓' : '○'} Un simbolo (ej: !, @, #, $)
+              </li>
+            </ul>
+          </div>
+        )}
+
+        {!esRegistro && <div className="my-4 text-right"><a href="/recuperar-contrasena" className="text-sm text-blue-300 hover:underline">Olvidé mi contraseña</a></div>}
+
+        <button onClick={handleSubmit} disabled={cargando}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm disabled:opacity-50">
+          {cargando ? 'Cargando...' : esRegistro ? 'Crear cuenta' : 'Ingresar'}
+        </button>
+
+        {mensaje && <p className="mt-4 text-sm text-center text-yellow-400">{mensaje}</p>}
+      </div>
+    </main>
+  );
+}
