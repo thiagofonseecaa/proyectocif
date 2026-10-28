@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import MarcaSeguridad from '../componentes/MarcaSeguridad';
 import HistorialAccesos from './HistorialAccesos';
 import SeguridadDosPasos from '../componentes/SeguridadDosPasos';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -114,7 +115,7 @@ export default function MiCuenta() {
   return <main className="cuenta-shell min-h-dvh text-slate-100">
     <header className="border-b border-slate-800 bg-gray-900 px-5 py-4 sm:px-8">
       <div className="max-w-5xl mx-auto flex flex-wrap gap-4 items-center justify-between">
-        <Link href="/chat" className="font-semibold text-lg">Sistema de Cifrado</Link>
+        <Link href="/chat" className="font-semibold text-lg" aria-label="Entre Claves, volver a chats"><MarcaSeguridad compacta /></Link>
         <Link href="/chat" className="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800">← Volver a los chats</Link>
       </div>
     </header>

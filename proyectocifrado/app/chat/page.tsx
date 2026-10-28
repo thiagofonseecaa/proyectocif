@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import MarcaSeguridad from '../componentes/MarcaSeguridad';
 import './movil.css';
 import { supabase } from '../../lib/supabase';
 import { cifrar, descifrar, esCifradoAutenticado, hashCifrado } from '../../lib/cifrado';
@@ -876,7 +877,7 @@ export default function ChatPage() {
     <main ref={marcoChatRef} data-conversacion={!!(contactoSeleccionado || grupoSeleccionado)} className="chat-adaptable h-dvh min-h-0 overflow-hidden bg-gray-950 text-gray-100 flex flex-col">
       <header className="chat-cabecera shrink-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold">Sistema de Cifrado</h1>
+          <h1><MarcaSeguridad compacta /></h1>
           <p className="text-xs text-gray-500">{usuario.email}</p>
         </div>
         <div className="flex items-center gap-2">

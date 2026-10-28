@@ -150,7 +150,6 @@ export default function RecuperarContrasena() {
   const input = 'w-full mt-2 rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60';
   return <main className="auth-shell min-h-dvh bg-gray-950 text-slate-100 flex items-center justify-center p-5">
     <section className="w-full max-w-md rounded-2xl border border-slate-800 bg-gray-900 p-6 sm:p-8">
-      <p className="text-xs uppercase tracking-widest text-blue-400 mb-3">Sistema de Cifrado</p>
       <MarcaSeguridad />
         <h1 className="text-2xl font-semibold">{phase === 'mfa' ? 'Confirmá que sos vos' : phase === 'change' ? 'Elegí tu nueva contraseña' : phase === 'done' ? 'Contraseña actualizada' : 'Recuperar mi cuenta'}</h1>
       {phase === 'loading' && <p role="status" className="mt-5 text-sm text-slate-400">Comprobando el enlace…</p>}

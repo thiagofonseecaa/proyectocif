@@ -76,3 +76,50 @@ input[type=checkbox] { accent-color: #5689ff; width: 1rem; height: 1rem; flex-sh
 .historial-info p { margin-top: .65rem; max-width: 70ch; }
 .historial-vacio { border: 1px dashed #405673; border-radius: 1rem; padding: 1.5rem; font-size: .9rem; }
 @media (max-width: 540px) { .historial-lista > li { flex-wrap: wrap; } .historial-fecha { width: 100%; text-align: left; padding-left: 3.35rem; } .cuenta-nav a { flex-grow: 1; text-align: center; } }
+
+/* Entre Claves: identidad compartida, conservando la estructura de la aplicación. */
+:root { --ec-linea: #293a54; --ec-azul: #3975f5; --ec-panel: #111c2e; }
+body { line-height: 1.5; }
+.marca-entre-claves { display: block; width: min(100%, 20rem); height: auto; object-fit: contain; margin: 0 auto 1.5rem; border-radius: .7rem; }
+.marca-compacta { width: 10.5rem; margin: -.4rem 0; border-radius: .4rem; }
+.auth-shell { background: radial-gradient(ellipse at 50% 0%, #17345a66, transparent 65%), #080e1a; }
+.auth-shell > div, .auth-shell > section { background: #111c2e; border: 1px solid var(--ec-linea); box-shadow: 0 24px 80px #0006, 0 1px 0 #ffffff08 inset; border-radius: 1.5rem; }
+.auth-shell > div { max-width: 28rem; }
+.auth-shell h1 { font-size: 1.7rem; font-weight: 600; letter-spacing: -.045em; }
+.auth-shell label { color: #c3d0e3; font-size: .8rem; font-weight: 500; }
+.auth-shell input:not([type=checkbox]):not([type=file]), .auth-shell select, .auth-shell textarea {
+ background: #0b1423; border-color: #33445f; border-radius: .8rem;
+}
+.auth-shell input:focus, .auth-shell textarea:focus, .auth-shell select:focus { border-color: #739ef8; box-shadow: 0 0 0 3px #3975f51a; }
+.auth-shell button { font-weight: 500; }
+.auth-shell button.bg-blue-600, .cuenta-shell button.bg-blue-600, .chat-adaptable button.bg-blue-600 {
+ background: #3065e8; border: 1px solid #5988f64d; box-shadow: 0 3px 10px #00133933; border-radius: .8rem;
+}
+.auth-shell button.bg-blue-600:hover, .cuenta-shell button.bg-blue-600:hover, .chat-adaptable button.bg-blue-600:hover { background: #3975f5; }
+.auth-shell button:disabled, .cuenta-shell button:disabled, .chat-adaptable button:disabled { box-shadow: none; }
+.auth-shell button.border { border-radius: .8rem; border-color: #344662; }
+.auth-shell button.border:hover { background: #1b2a43; }
+.auth-shell [role=alert] { color: #ffc0c5; }
+.chat-cabecera { background: #111c2e; border-bottom-color: var(--ec-linea); gap: 1rem; padding-top: .85rem; padding-bottom: .85rem; }
+.chat-cabecera > div:first-child { min-width: 0; }
+.chat-cabecera > div:first-child > p { max-width: 32ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: .3rem; }
+.chat-cabecera a, .chat-cabecera button { min-height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; border-radius: .7rem; font-weight: 500; }
+.chat-lista { background: #101b2d; border-color: var(--ec-linea); }
+.chat-lista > div:first-child { padding: .65rem .5rem 0; border-color: var(--ec-linea); }
+.chat-lista input { min-height: 2.75rem; border-color: #2e405d; border-radius: .8rem; }
+.chat-lista button:hover { background-color: #192a45; }
+.chat-burbuja { border-radius: 1rem; box-shadow: 0 2px 8px #00000014; }
+.chat-compositor { border-top-color: var(--ec-linea); background: #101b2d; }
+.chat-compositor textarea, .chat-compositor input { border-color: #344662; border-radius: .85rem; }
+.cuenta-shell { background: radial-gradient(ellipse at 50% 0%, #17345a44, transparent 60%), #080e1a; }
+.cuenta-shell .panel-cuenta { background: #111c2e; border-color: var(--ec-linea); box-shadow: 0 8px 32px #0002; border-radius: 1.25rem; }
+.cuenta-nav a { border-radius: .8rem; }
+.cuenta-shell input:not([type=checkbox]):not([type=hidden]), .cuenta-shell select { background: #0b1423; border-color: #344662; border-radius: .8rem; }
+.cuenta-hero h1 { font-weight: 600; }
+@media (max-width: 540px) {
+ .auth-shell { padding: 1rem; }
+ .auth-shell > div, .auth-shell > section { padding: 1.5rem; border-radius: 1.25rem; }
+ .marca-compacta { width: 8.5rem; }
+ .chat-cabecera { padding-left: .85rem; padding-right: .85rem; gap: .5rem; }
+ .chat-cabecera a, .chat-cabecera button { padding-left: .65rem; padding-right: .65rem; font-size: .75rem; }
+}
