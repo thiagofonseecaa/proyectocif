@@ -41,7 +41,7 @@ export default function SeguridadDosPasos({ userId }: { userId: string }) {
   async function agregar() {
     // La activación se habilita solamente después de instalar la protección del servidor.
     const db = await supabase.rpc('p09_mfa_permitido');
-    if (db.error || db.data !== true) throw new Error('Primero debe instalarse el paso 09 de seguridad en Supabase o verificarse el segundo factor.');
+    if (db.error || db.data !== true) throw new Error('No pudimos habilitar la protección. Verificá tu sesión y volvé a intentar. Si continúa, contactá al administrador.');
     const current = await supabase.auth.mfa.listFactors();
     if (current.error) throw current.error;
     if (current.data.totp.length >= 2) throw new Error('Ya tenés dos autenticadores. Eliminá uno antes de agregar otro.');
@@ -75,15 +75,15 @@ export default function SeguridadDosPasos({ userId }: { userId: string }) {
   const activos = factores.filter(f => f.status === 'verified');
   const boton = 'min-h-11 rounded-lg border border-slate-600 px-4 py-2 text-sm disabled:opacity-50';
   return <section id="seguridad" aria-labelledby="dos-pasos-title" className="panel-cuenta mt-6 rounded-2xl border border-slate-800 bg-gray-900 p-6 sm:p-8">
-    <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="dos-pasos-title" className="text-lg font-semibold">Verificación en dos pasos (2FA)</h2><button disabled={busy || !!alta} onClick={() => void ejecutar(cargar)} className={boton}>Actualizar</button></div>
-    <p className="mt-3 text-sm text-slate-300">Además de tu contraseña, un código temporal protege el ingreso a tu cuenta. No cambia las claves de tus conversaciones.</p>
+    <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="dos-pasos-title" className="text-lg font-semibold">Protección de acceso</h2><button disabled={busy || !!alta} onClick={() => void ejecutar(cargar)} className={boton}>Actualizar estado</button></div>
+    <p className="mt-3 text-sm text-slate-300">Al ingresar, te pediremos tu contraseña y un código de tu aplicación autenticadora.</p>
     <p className="estado-seguridad mt-3" data-activo={activos.length > 0}>{!listo ? 'Comprobando…' : activos.length ? '✓ Protección activada' : alta ? 'Configuración en curso' : 'Sin activar'}</p>
     {aviso && <p role="status" className="mt-3 text-emerald-300">{aviso}</p>}
     {error && <p role="alert" className="mt-3 text-red-300">{error}</p>}
     {!alta && <>
       <ul className="mt-4 space-y-3">{factores.map(f => <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-950 p-3"><span className="break-words">{nombreAutenticador(f.friendly_name)} · {f.status === 'verified' ? 'Confirmado' : 'Pendiente'}</span><button disabled={busy || !!quitar} className={boton} onClick={() => { if (f.status === 'verified') { setQuitar(f.id); setFactorPrueba(f.id); setCodigo(''); } else void ejecutar(() => eliminar(f.id, false)); }}>{f.status === 'verified' ? 'Quitar autenticador' : 'Cancelar configuración'}</button></li>)}</ul>
-      {!quitar && activos.length < 2 && <button disabled={busy || !listo} onClick={() => void ejecutar(agregar)} className={boton + ' mt-4 bg-blue-600'}>{activos.length ? 'Agregar autenticador de respaldo' : 'Activar 2FA'}</button>}
-      {!quitar && activos.length === 1 && <p className="mt-2 text-sm leading-relaxed text-slate-300">Configurá otra aplicación autenticadora, preferentemente en otro dispositivo, por si perdés acceso a la principal.</p>}
+      {!quitar && activos.length < 2 && <button disabled={busy || !listo} onClick={() => void ejecutar(agregar)} className={boton + ' mt-4 bg-blue-600'}>{activos.length ? 'Agregar un autenticador de respaldo' : 'Activar verificación en dos pasos'}</button>}
+      {!quitar && activos.length === 1 && <p className="mt-2 text-sm leading-relaxed text-slate-300">El respaldo te permite ingresar si perdés acceso al autenticador principal.</p>}
     </>}
     {alta && <form className="mt-5 space-y-4" onSubmit={e => { e.preventDefault(); void ejecutar(confirmarAlta); }}>
       <p>En tu aplicación autenticadora, elegí agregar una cuenta y escaneá este QR.</p>
@@ -99,6 +99,6 @@ export default function SeguridadDosPasos({ userId }: { userId: string }) {
       <label className="block">Autenticador para confirmar<select value={factorPrueba} disabled={busy} onChange={e => { setFactorPrueba(e.target.value); setCodigo(''); }} className="mt-2 w-full rounded-lg border border-slate-600 bg-gray-950 p-3">{activos.map(f => <option key={f.id} value={f.id}>{nombreAutenticador(f.friendly_name)}</option>)}</select></label><label className="block" htmlFor="mfa-remove-code">Código de ese autenticador</label><input id="mfa-remove-code" required autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={codigo} disabled={busy} onChange={e => setCodigo(e.target.value.replace(/\D/g, ''))} className="w-full rounded-lg border border-slate-600 bg-gray-950 p-3 text-lg" />
       <div className="flex flex-wrap gap-3"><button disabled={busy || codigo.length !== 6} className={boton + ' text-red-300'}>Confirmar eliminación</button><button type="button" disabled={busy} onClick={() => { setQuitar(null); setCodigo(''); }} className={boton}>Cancelar</button></div>
     </form>}
-    <p className="mt-5 rounded-xl border border-slate-700 bg-slate-950/30 p-4 text-sm leading-relaxed text-slate-300">Si configuraste un autenticador de respaldo, podés usarlo cuando pierdas acceso al principal. Si perdés acceso a ambos autenticadores, contactá al administrador para revisar las opciones de recuperación. El correo para restablecer la contraseña no elimina el 2FA.</p>
+    <details className="cuenta-ayuda mt-5"><summary>¿Qué pasa si pierdo el autenticador?</summary><p className="mt-3 text-sm leading-relaxed text-slate-300">Usá el autenticador de respaldo, si lo configuraste. Si no tenés acceso a ninguno, contactá al administrador. Recuperar la contraseña por correo no desactiva la verificación en dos pasos.</p></details>
   </section>;
 }

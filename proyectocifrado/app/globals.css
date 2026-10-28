@@ -116,10 +116,38 @@ body { line-height: 1.5; }
 .cuenta-nav a { border-radius: .8rem; }
 .cuenta-shell input:not([type=checkbox]):not([type=hidden]), .cuenta-shell select { background: #0b1423; border-color: #344662; border-radius: .8rem; }
 .cuenta-hero h1 { font-weight: 600; }
+.cuenta-contenido { max-width: 53rem; }
+.cuenta-opciones #perfil { padding: 1.5rem; }
+.perfil-datos { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; }
+.perfil-detalles { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--ec-linea); font-size: .8rem; color: #a8bddb; }
+.cuenta-acordeon { overflow: clip; }
+.cuenta-acordeon > summary { list-style: none; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; }
+.cuenta-acordeon > summary::-webkit-details-marker { display: none; }
+.cuenta-acordeon > summary:hover { background: #17263d; }
+.cuenta-acordeon > summary:focus-visible, .grupo-opcion > summary:focus-visible { outline: 2px solid #8cb5ff; outline-offset: -4px; border-radius: 1rem; }
+.grupo-informacion { background: #111c2e; border-color: #344662; }
+.grupo-opcion { border-top: 1px solid #344662; }
+.grupo-opcion > summary { padding: 1.1rem 0; cursor: pointer; font-size: .95rem; font-weight: 500; color: #dbe8fb; }
+.grupo-opcion > summary > span { margin-left: .75rem; }
+.grupo-opcion > section, .grupo-opcion > form { padding-top: .35rem; }
+.cuenta-acordeon > summary > span:nth-child(2) { flex: 1; min-width: 0; }
+.cuenta-acordeon summary strong { display: block; font-size: .95rem; font-weight: 600; }
+.cuenta-acordeon > summary > span > span { display: block; color: #a5b7d0; font-size: .82rem; margin-top: .3rem; }
+.cuenta-opcion-icono { width: 2.5rem; height: 2.5rem; flex-shrink: 0; display: grid; place-items: center; border-radius: .8rem; background: #1c355a; color: #a8caff; font-size: .8rem; font-weight: 600; }
+.cuenta-chevron { color: #9ab2d5; font-size: 1.3rem; }
+.cuenta-acordeon[open] > summary { border-bottom: 1px solid var(--ec-linea); }
+.cuenta-acordeon[open] > summary .cuenta-chevron { transform: rotate(180deg); }
+.cuenta-acordeon-cuerpo { padding: 1.5rem; }
+.cuenta-acordeon-cuerpo > .panel-cuenta { margin: 0; padding: 0; border: 0; box-shadow: none; border-radius: 0; }
+.cuenta-ayuda { padding-top: 1rem; border-top: 1px solid var(--ec-linea); font-size: .82rem; color: #b4c9e6; }
+.chat-bienvenida-icono { width: 4.25rem; height: 4.25rem; margin: 0 auto 1.5rem; display: grid; place-items: center; border: 1px solid #314a70; border-radius: 1.25rem; color: #9bbfff; background: #13243c; }
 @media (max-width: 540px) {
  .auth-shell { padding: 1rem; }
  .auth-shell > div, .auth-shell > section { padding: 1.5rem; border-radius: 1.25rem; }
  .marca-compacta { width: 8.5rem; }
  .chat-cabecera { padding-left: .85rem; padding-right: .85rem; gap: .5rem; }
  .chat-cabecera a, .chat-cabecera button { padding-left: .65rem; padding-right: .65rem; font-size: .75rem; }
+ .perfil-datos { grid-template-columns: minmax(0, 1fr); }
+ .cuenta-acordeon > summary { padding: 1rem; gap: .75rem; }
+ .cuenta-acordeon-cuerpo { padding: 1.1rem; }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import IconoCuenta from '../componentes/IconoCuenta';
 import MarcaSeguridad from '../componentes/MarcaSeguridad';
 import HistorialAccesos from './HistorialAccesos';
 import SeguridadDosPasos from '../componentes/SeguridadDosPasos';
@@ -120,33 +121,26 @@ export default function MiCuenta() {
       </div>
     </header>
     <div className="cuenta-contenido max-w-6xl mx-auto px-5 py-8 sm:px-8 sm:py-12">
-      <div className="cuenta-hero"><p className="etiqueta-acceso">Tu espacio personal</p>
+      <div className="cuenta-hero">
       <h1 className="text-3xl font-semibold tracking-tight">Mi cuenta</h1>
-      <p className="mt-3 text-sm text-slate-300">Tu perfil, tus accesos y la seguridad de tu cuenta, en un solo lugar.</p></div>
-      {loading ? <p role="status" className="mt-10 text-slate-300">Cargando tu cuenta…</p> : loadError ? <div role="alert" className="mt-8 space-y-4"><p>{loadError}</p><button onClick={() => setRetry(v => v + 1)} className="bg-blue-600 rounded-lg px-4 py-2">Reintentar</button></div> : user && <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.2fr] items-start">
-        <div className="space-y-6">
+      <p className="mt-3 text-sm text-slate-300">Consultá tus datos y elegí qué querés administrar.</p></div>
+      {loading ? <p role="status" className="mt-10 text-slate-300">Cargando tu cuenta…</p> : loadError ? <div role="alert" className="mt-8 space-y-4"><p>{loadError}</p><button onClick={() => setRetry(v => v + 1)} className="bg-blue-600 rounded-lg px-4 py-2">Reintentar</button></div> : user && <div className="cuenta-opciones mt-6 space-y-4">
           <section id="perfil" aria-labelledby="perfil-title" className="panel-cuenta rounded-2xl border border-slate-800 bg-gray-900 p-6">
             <div className="flex items-center gap-4 mb-6">
               <div aria-hidden="true" className="h-14 w-14 shrink-0 rounded-2xl bg-blue-500/15 text-blue-300 flex items-center justify-center text-xl font-semibold">{initials}</div>
               <div className="min-w-0"><h2 id="perfil-title" className="text-lg font-semibold break-words">{username || 'Tu perfil'}</h2><p className="text-sm text-slate-300 mt-1">Datos de tu cuenta</p></div>
             </div>
             {profileError && <p role="alert" className="text-amber-300 text-sm mb-4">{profileError} <button className="underline" onClick={() => setRetry(v => v + 1)}>Reintentar</button></p>}
-            <dl className="space-y-5 text-sm">
+            <dl className="perfil-datos space-y-5 text-sm">
               <div><dt className="text-slate-300 text-sm mb-1">Correo electrónico</dt><dd className="break-all">{user.email || 'No disponible'}</dd></div>
               <div><dt className="text-slate-300 text-sm mb-1">Verificación del correo</dt><dd>{user.email_confirmed_at ? 'Correo confirmado' : 'Correo sin confirmar'}</dd></div>
-              <div><dt className="text-slate-300 text-sm mb-1">Cuenta creada</dt><dd>{fecha(user.created_at)}</dd></div>
             </dl>
+            <details className="perfil-detalles"><summary>Más datos de la cuenta</summary><p className="mt-3 text-sm text-slate-300">Cuenta creada el {fecha(user.created_at)}.</p></details>
           </section>
-          <section aria-labelledby="claves-title" className="rounded-2xl border border-blue-400/30 bg-blue-950/30 p-6 text-sm leading-7 text-slate-300">
-            <div className="mb-4 flex items-center gap-3"><span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><h2 id="claves-title" className="font-semibold text-blue-100">Tu contraseña y las claves del chat</h2></div>
-            <p><strong className="font-medium text-white">Contraseña de la cuenta:</strong> te permite iniciar sesión.</p><p className="mt-3"><strong className="font-medium text-white">Claves de la conversación:</strong> las dos claves compartidas permiten leer y enviar mensajes cifrados.</p>
-            <p className="mt-4 border-t border-blue-400/20 pt-4">Cambiar tu contraseña aquí no modifica ni recupera las claves de tus conversaciones.</p>
-          </section>
-        </div>
-        <section id="contrasena" aria-labelledby="password-title" className="panel-cuenta rounded-2xl border border-slate-800 bg-gray-900 p-6 sm:p-8">
-          <h2 id="password-title" className="text-lg font-semibold">Cambiar contraseña</h2>
-          <p className="mt-2 mb-6 text-sm text-slate-300">Confirmá tu contraseña actual y elegí una nueva que no uses en otros servicios.</p>
-          <p className="mb-5 text-sm"><Link href="/recuperar-contrasena" className="text-blue-300 hover:underline">¿Olvidaste tu contraseña actual? Recuperala por correo</Link></p>
+        <details id="contrasena" className="cuenta-acordeon panel-cuenta" onToggle={e => { if (!e.currentTarget.open && !busy) { setActual(''); setNueva(''); setRepetida(''); setCode(''); setNeedsCode(false); setVisible(false); setError(''); setSuccess(''); } }}>
+          <summary><IconoCuenta tipo="clave" /><span><strong>Cambiar contraseña</strong><span>Actualizá la contraseña que usás para ingresar.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo">
+          <p className="mb-5 text-sm text-slate-300">Este cambio no modifica las claves de tus conversaciones.</p>
           <form onSubmit={guardar} className="space-y-5">
             <input type="text" name="username" autoComplete="username" value={user.email || ''} readOnly hidden />
             <div><label htmlFor="actual" className="text-sm">Contraseña actual</label><input id="actual" autoComplete="current-password" type={visible ? 'text' : 'password'} required disabled={busy} value={actual} onChange={e => setActual(e.target.value)} className={inputClass} /></div>
@@ -158,10 +152,26 @@ export default function MiCuenta() {
             {success && <p role="status" className="text-sm text-emerald-300">{success}</p>}
             <button type="submit" disabled={busy} className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-3 text-sm font-medium">{busy ? 'Procesando…' : 'Guardar nueva contraseña'}</button>
           </form>
-        </section>
+          <p className="mt-5 text-sm"><Link href="/recuperar-contrasena" className="text-blue-300 hover:underline">Olvidé mi contraseña actual</Link></p>
+          </div>
+        </details>
+        <details className="cuenta-acordeon panel-cuenta">
+          <summary><IconoCuenta tipo="escudo" /><span><strong>Verificación en dos pasos</strong><span>Protegé tu cuenta con un código adicional.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo"><SeguridadDosPasos key={'mfa-' + user.id} userId={user.id} /></div>
+        </details>
+        <details className="cuenta-acordeon panel-cuenta">
+          <summary><IconoCuenta tipo="actividad" /><span><strong>Actividad de la cuenta</strong><span>Revisá tus ingresos y cambios recientes.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo"><HistorialAccesos key={user.id} userId={user.id} /></div>
+        </details>
+        <details className="cuenta-acordeon panel-cuenta">
+          <summary><IconoCuenta tipo="campana" /><span><strong>Notificaciones</strong><span>Dónde consultar tus mensajes y solicitudes.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo text-sm text-slate-300 space-y-3"><p>Consultá tus mensajes en Chats y las invitaciones en Solicitudes.</p><p>Por ahora, Entre Claves no envía notificaciones al celular ni al escritorio cuando la web está cerrada.</p><Link href="/chat" className="inline-block text-blue-300 hover:underline">Ir a mis conversaciones →</Link></div>
+        </details>
+        <details className="cuenta-acordeon panel-cuenta">
+          <summary><IconoCuenta tipo="privacidad" /><span><strong>Privacidad y uso de datos</strong><span>Conocé qué información utiliza Entre Claves.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo text-sm text-slate-300 space-y-3"><p>Usamos los datos de tu cuenta para permitir el acceso, conectar tus contactos y mantener tus conversaciones.</p><p>Los mensajes y adjuntos se cifran antes de enviarse. Las claves de las conversaciones son distintas de tu contraseña de acceso.</p><Link href="/privacidad" className="inline-block text-blue-300 hover:underline">Leer privacidad y uso de datos →</Link></div>
+        </details>
       </div>}
-      {!loading && !loadError && user && <SeguridadDosPasos key={'mfa-' + user.id} userId={user.id} />}
-      {!loading && !loadError && user && <HistorialAccesos key={user.id} userId={user.id} />}
     </div>
   </main>;
 }

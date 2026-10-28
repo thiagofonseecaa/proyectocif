@@ -112,7 +112,7 @@ export default function InformacionGrupo({ grupo, userId, contactos, onClose, on
   const button = 'rounded-lg border border-slate-600 px-4 py-2 text-sm hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed';
   return <dialog ref={dialog} aria-labelledby="grupo-info-title"
     onCancel={e => { e.preventDefault(); if (!locked.current) onClose(); }}
-    className="m-auto w-[calc(100%_-_2rem)] max-w-xl max-h-[85dvh] overflow-y-auto rounded-2xl border border-slate-700 bg-gray-900 p-6 text-white shadow-xl backdrop:bg-black/70">
+    className="grupo-informacion m-auto w-[calc(100%_-_2rem)] max-w-xl max-h-[85dvh] overflow-y-auto rounded-2xl border border-slate-700 bg-gray-900 p-6 text-white shadow-xl backdrop:bg-black/70">
     <header className="flex items-start justify-between gap-4">
       <div><h2 id="grupo-info-title" className="text-xl font-semibold">Información del grupo</h2>
         <p className="mt-1 text-slate-300 break-words">{grupo.nombre}</p></div>
@@ -121,17 +121,17 @@ export default function InformacionGrupo({ grupo, userId, contactos, onClose, on
     {error && <p role="alert" className="mt-4 rounded-lg bg-red-950 p-3 text-sm text-red-200">{error}</p>}
     {aviso && <p role="status" className="mt-4 rounded-lg bg-emerald-950 p-3 text-sm text-emerald-200">{aviso}</p>}
     <div className="my-5 flex items-center justify-between gap-3">
-      <p className="text-sm text-slate-300">{loading ? 'Cargando información…' : `${miembros.length} integrantes${miembros.length ? ' · ' + (admin ? 'Sos administrador' : 'Sos miembro') : ''}`}</p>
+      <p className="text-sm text-slate-300">{loading ? 'Cargando información…' : `${miembros.length} ${miembros.length === 1 ? 'integrante' : 'integrantes'}${miembros.length ? ' · ' + (admin ? 'Sos administrador' : 'Sos miembro') : ''}`}</p>
       <button disabled={busy || loading} onClick={() => void ejecutar(() => cargar())} className={button}>Actualizar</button>
     </div>
     {!loading && miembros.length > 0 && <>
-      <ConfigurarRetencion grupoId={grupo.id} admin={admin} userId={userId} onChanged={onPolicyChanged} />
-      {admin && <form onSubmit={e => { e.preventDefault(); void guardarNombre(); }} className="border-t border-slate-700 py-5">
+      <details className="grupo-opcion"><summary>Duración de los mensajes</summary><ConfigurarRetencion grupoId={grupo.id} admin={admin} userId={userId} onChanged={onPolicyChanged} /></details>
+      {admin && <details className="grupo-opcion"><summary>Editar nombre del grupo</summary><form onSubmit={e => { e.preventDefault(); void guardarNombre(); }} className="py-5">
         <label htmlFor="grupo-info-nombre" className="block font-medium mb-2">Nombre del grupo</label>
         <div className="flex gap-2"><input id="grupo-info-nombre" value={nombre} maxLength={80} disabled={busy}
           onChange={e => setNombre(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-600 bg-gray-950 p-3" />
           <button disabled={busy || nombre.trim() === grupo.nombre || !nombre.trim()} className={button}>Guardar</button></div>
-      </form>}
+      </form></details>}
       <section className="border-t border-slate-700 py-5" aria-label="Integrantes">
         <h3 className="font-medium mb-3">Integrantes</h3>
         <ul className="space-y-2">{miembros.map(m => <li key={m.usuario_id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-800 p-3">
@@ -141,8 +141,7 @@ export default function InformacionGrupo({ grupo, userId, contactos, onClose, on
             onClick={() => setConfirmar({ id: m.usuario_id, nombre: m.usuario?.username || 'este integrante' })}>Quitar</button>}
         </li>)}</ul>
       </section>
-      {admin && <section className="border-t border-slate-700 py-5" aria-label="Invitaciones">
-        <h3 className="font-medium">Invitar contactos</h3>
+      {admin && <details className="grupo-opcion"><summary>Invitar contactos<span className="text-xs text-slate-400">{invitaciones.length ? `${invitaciones.length} pendientes` : ''}</span></summary><section className="py-4" aria-label="Invitaciones">
         <p className="mt-1 mb-3 text-sm text-slate-300">Se unirán cuando acepten la invitación en Solicitudes.</p>
         {!disponible.length ? <p className="text-sm text-slate-400">No hay contactos disponibles para invitar.</p> : <>
           <div className="max-h-44 overflow-y-auto space-y-2">{disponible.map(c => <label key={c.id} className="flex items-center gap-3 rounded-lg bg-slate-800 p-3">
@@ -152,7 +151,7 @@ export default function InformacionGrupo({ grupo, userId, contactos, onClose, on
         </>}
         <h4 className="mt-5 mb-2 text-sm font-medium">Invitaciones pendientes</h4>
         {!invitaciones.length ? <p className="text-sm text-slate-400">No hay invitaciones pendientes.</p> : <ul className="space-y-2">{invitaciones.map(i => <li key={i.id} className="text-sm text-amber-200">{i.receptor?.username || 'Contacto'} · Esperando respuesta</li>)}</ul>}
-      </section>}
+      </section></details>}
       <section className="border-t border-slate-700 pt-5">
         <p className="text-sm text-slate-300 mb-3">Al salir, dejás de tener acceso al grupo desde la aplicación.</p>
         <button disabled={busy} onClick={() => setConfirmar('salir')} className={button + ' text-red-300'}>Salir del grupo</button>

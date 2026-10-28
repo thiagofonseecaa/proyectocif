@@ -1103,7 +1103,11 @@ export default function ChatPage() {
             if (!destino) {
               return (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-gray-600">Selecciona un contacto o grupo para chatear</p>
+                  <div className="chat-bienvenida text-center px-6 max-w-md">
+                    <div className="chat-bienvenida-icono" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z"/><path d="M8 9h8M8 13h5"/></svg></div>
+                    <h2 className="text-xl font-semibold tracking-tight text-slate-100">Tus conversaciones, en un solo lugar</h2>
+                    <p className="text-sm leading-relaxed text-slate-400 mt-3">Elegí un chat o un grupo para comenzar. Si es tu primera vez, buscá a alguien desde Agregar.</p>
+                  </div>
                 </div>
               );
             }
