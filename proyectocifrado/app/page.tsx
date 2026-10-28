@@ -30,7 +30,7 @@ export default function Entrada() {
   return (
     <main className="min-h-dvh bg-gray-950 text-gray-100 flex items-center justify-center p-6">
       <div className="text-center space-y-4">
-        <h1 className="text-2xl font-semibold">Sistema de Cifrado</h1>
+        <h1 className="text-2xl font-semibold">Entre Claves</h1>
         {error ? <>
           <p role="alert" className="text-gray-400">No pudimos comprobar tu sesión. Volvé a intentarlo.</p>
           <button onClick={() => { setError(false); setIntento(value => value + 1); }}

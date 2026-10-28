@@ -62,13 +62,13 @@ export default function LoginPage() {
     <main className="auth-shell min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
       <div className="w-full max-w-sm bg-gray-900 rounded-xl border border-gray-800 p-8">
         <MarcaSeguridad />
-        <h1 className="text-2xl font-semibold mb-1 text-center">Sistema de Cifrado</h1>
-        <p className="text-gray-500 text-sm mb-8 text-center">E.E.T. N°3139</p>
+        <h1 className="text-2xl font-semibold mb-1 text-center">Bienvenido</h1>
+        <p className="text-gray-500 text-sm mb-8 text-center">Tu espacio para conversar en privado.</p>
 
         <div className="flex gap-2 mb-6">
           <button onClick={() => { setEsRegistro(false); setMensaje(''); }}
             className={`flex-1 py-2 rounded-lg text-sm ${!esRegistro ? 'bg-blue-600 text-white' : 'border border-gray-700 text-gray-400'}`}>
-            Iniciar sesion
+            Iniciar sesión
           </button>
           <button onClick={() => { setEsRegistro(true); setMensaje(''); }}
             className={`flex-1 py-2 rounded-lg text-sm ${esRegistro ? 'bg-blue-600 text-white' : 'border border-gray-700 text-gray-400'}`}>
@@ -81,7 +81,7 @@ export default function LoginPage() {
           type="email" placeholder="tu@email.com"
           className="w-full mt-1 mb-4 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500" />
 
-        <label className="text-xs text-gray-500">Contrasena</label>
+        <label className="text-xs text-gray-500">Contraseña</label>
         <div className="relative mt-1">
           <input value={password} onChange={e => setPassword(e.target.value)}
             type={verPassword ? 'text' : 'password'}

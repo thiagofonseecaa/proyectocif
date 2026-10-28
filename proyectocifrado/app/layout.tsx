@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mensajería cifrada",
-  description: "Conversaciones privadas y grupos con doble cifrado.",
+  title: "Entre Claves",
+  description: "Tu espacio para conversar en privado. Mensajes, grupos y archivos cifrados.",
 };
 
 export default function RootLayout({
