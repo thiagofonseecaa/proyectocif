@@ -7,6 +7,18 @@
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 @media (max-width: 767px) {
+  html.pagina-chat, html.pagina-chat body { overflow: hidden; overscroll-behavior: none; }
+  .chat-adaptable {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--chat-alto-visible, 100dvh);
+    transform: translateY(var(--chat-desplazamiento, 0px));
+    flex-shrink: 0;
+  }
+  .chat-adaptable[data-teclado="true"] .chat-cabecera { display: none; }
+  .chat-adaptable[data-teclado="true"] .chat-cifrado { display: none; }
+  .chat-adaptable[data-teclado="true"] .chat-duracion:not([open]) { display: none; }
+  .chat-adaptable .chat-mensajes, .chat-adaptable .chat-apertura-scroll { scroll-padding-block: 1rem; }
   .chat-adaptable .chat-lista { width: 100%; border-right: 0; }
   .chat-adaptable .chat-conversacion { display: none; }
   .chat-adaptable[data-conversacion="true"] .chat-lista { display: none; }

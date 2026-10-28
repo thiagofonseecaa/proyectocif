@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import MarcaSeguridad from '../componentes/MarcaSeguridad';
 import AbrirConversacion from './AbrirConversacion';
 import { AvatarChat, IconoChat, fechaActividad } from './ElementosChat';
+import { useViewportChat } from './useViewportChat';
 import './movil.css';
 import './elegante.css';
 import { supabase } from '../../lib/supabase';
@@ -184,20 +185,7 @@ export default function ChatPage() {
   const [usuariosOnline, setUsuariosOnline] = useState<Set<string>>(new Set());
 
   const marcoChatRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    const ajustar = () => {
-      if (!marcoChatRef.current) return;
-      // El zoom del usuario conserva su comportamiento nativo.
-      if (window.innerWidth < 768 && viewport && viewport.scale === 1) {
-        marcoChatRef.current.style.height = viewport.height + 'px';
-      } else marcoChatRef.current.style.removeProperty('height');
-    };
-    ajustar();
-    viewport?.addEventListener('resize', ajustar);
-    window.addEventListener('resize', ajustar);
-    return () => { viewport?.removeEventListener('resize', ajustar); window.removeEventListener('resize', ajustar); };
-  }, [usuario]);
+  useViewportChat(marcoChatRef, !!usuario && !sesionBloqueada);
 
   const volverALista = () => {
     invalidarChat();
