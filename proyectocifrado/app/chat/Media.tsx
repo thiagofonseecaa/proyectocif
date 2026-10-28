@@ -140,14 +140,14 @@ export function AdjuntarMedia({ onSend, children }: { onSend: (file: File) => Pr
   return <div className="space-y-3">
     <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,video/mp4,video/webm,.m4a" className="hidden"
       onChange={e => { const candidate = e.target.files?.[0]; if (candidate) choose(candidate); e.target.value = ''; }} />
-    <div className="flex flex-wrap gap-2 items-center text-xs">
+    <details className="chat-adjuntos"><summary>{recording ? '● Grabando audio · Ver controles' : requesting ? 'Esperando micrófono…' : '＋ Adjuntar o grabar audio'}</summary><div className="flex flex-wrap gap-2 items-center text-xs">
       {[['foto', 'Fotos y videos', 'image/jpeg,image/png,image/webp,video/mp4,video/webm'], ['archivo-audio', 'Subir audio', 'audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,.m4a']].map(([tipo, texto, formatos]) => <button type="button" key={tipo} disabled={busy || recording || requesting} onClick={() => seleccionar(formatos)} className={accion}>{icono(tipo)}{texto}</button>)}
       {!recording ? <button type="button" disabled={busy || requesting || !!file} onClick={record} className={accion}>{icono('audio')}{requesting ? 'Esperando micrófono…' : 'Grabar voz'}</button>
         : <><span role="status" className="text-red-400">Grabando {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} / 5:00</span>
           <button type="button" onClick={() => recorder.current?.stop()} className={accion}>Finalizar audio</button>
           <button type="button" onClick={() => { cancelled.current = true; recorder.current?.stop(); }}>Cancelar</button></>}
       <span className="text-gray-400">Hasta 20 MB por archivo · Grabación de hasta 5 min</span>
-    </div>
+    </div></details>
     {file && <div className="rounded-2xl border border-slate-600 bg-slate-800/70 p-4 space-y-3">
       <p className="text-xs break-all">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p>
       {preview && (validarArchivo(file).startsWith('audio/') ? <audio controls src={preview} className="max-w-full" /> : validarArchivo(file).startsWith('image/') ? <img src={preview} alt="Vista previa del adjunto" className="max-h-40 max-w-full rounded-xl object-contain" /> : <video controls playsInline src={preview} className="max-h-40 max-w-full" />)}

@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import MarcaSeguridad from '../componentes/MarcaSeguridad';
+import AbrirConversacion from './AbrirConversacion';
+import { AvatarChat, IconoChat, fechaActividad } from './ElementosChat';
 import './movil.css';
+import './elegante.css';
 import { supabase } from '../../lib/supabase';
 import { cifrar, descifrar, esCifradoAutenticado, hashCifrado } from '../../lib/cifrado';
 import DOMPurify from 'dompurify';
@@ -24,7 +27,7 @@ function CheckStatus({ enviado, leido }: { enviado: boolean, leido: boolean }) {
 }
 
 function tiempoRelativo(fecha: string | null | undefined) {
-  if (!fecha) return 'sin conexion registrada';
+  if (!fecha) return 'Sin conexión registrada';
   const ahora = new Date();
   const d = new Date(fecha);
   const diffMs = ahora.getTime() - d.getTime();
@@ -72,6 +75,8 @@ export default function ChatPage() {
   const [contactoSeleccionado, setContactoSeleccionado] = useState<any>(null);
   const [mensajes, setMensajes] = useState<any[]>([]);
   const [mensaje, setMensaje] = useState('');
+  const [enviandoTexto, setEnviandoTexto] = useState(false);
+  const envioTextoRef = useRef(false);
   const [mostrarClaves, setMostrarClaves] = useState(false);
   const [claveVig, setClaveVig] = useState('');
   const [claveAes, setClaveAes] = useState('');
@@ -86,7 +91,7 @@ export default function ChatPage() {
   const [busquedaChats, setBusquedaChats] = useState('');
   const [busquedaGrupos, setBusquedaGrupos] = useState('');
 
-  // --- Estado para "escribiendo..." ---
+  // --- Estado para "Escribiendo…" ---
   const [otroEscribiendo, setOtroEscribiendo] = useState<string | null>(null);
   const canalActivoRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -160,14 +165,20 @@ export default function ChatPage() {
   useEffect(() => { resumen.refresh(); }, [ultimoMensajeId, resumen.refresh]);
   const filaResumen = (tipo: 'privado' | 'grupo', id: string) => {
     const item = resumen.buscarResumen(tipo, id);
-    if (!item?.ultimo_id) return null;
+    if (!item?.ultimo_id) return <p className="chat-fila-resumen">Abrí la conversación para comenzar.</p>;
     const pendientes = Number(item?.pendientes || 0);
-    return <div className="mt-2 flex items-center gap-2 min-w-0">
+    return <div className="chat-fila-resumen flex items-center gap-2 min-w-0">
       <p className="min-w-0 flex-1 truncate text-xs text-slate-300">{resumen.vistaPrevia(tipo,id)}</p>
-      {item?.ultima_fecha && <time dateTime={item.ultima_fecha} className="shrink-0 text-xs text-slate-400">{new Date(item.ultima_fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })} {new Date(item.ultima_fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</time>}
       {pendientes > 0 && <span aria-label={pendientes + ' mensajes sin leer'} className="shrink-0 min-w-6 rounded-full bg-blue-600 px-2 py-1 text-center text-xs font-semibold text-white">{pendientes > 99 ? '99+' : pendientes}</span>}
     </div>;
   };
+
+  async function enviarTexto() {
+    if (envioTextoRef.current || !mensaje.trim()) return;
+    envioTextoRef.current = true; setEnviandoTexto(true);
+    try { await (grupoSeleccionado ? enviarMensajeGrupo() : enviarMensaje()); }
+    finally { envioTextoRef.current = false; setEnviandoTexto(false); }
+  }
 
   // --- Estado de presencia (en linea / ultima vez) ---
   const [usuariosOnline, setUsuariosOnline] = useState<Set<string>>(new Set());
@@ -893,9 +904,13 @@ export default function ChatPage() {
         <div className="chat-lista w-80 lg:w-96 shrink-0 min-h-0 overflow-hidden bg-gray-900 border-r border-gray-800 flex flex-col">
           <div className="flex shrink-0 gap-1 px-2 pt-2 border-b border-gray-700">
 
-            <button onClick={() => setVista('buscar')}
-              className={`flex-1 min-h-14 px-1 py-4 text-sm font-semibold rounded-t-lg transition-colors focus-visible:outline-2 focus-visible:outline-blue-300 ${vista === 'buscar' ? 'bg-blue-500/15 text-blue-200 border-b-2 border-blue-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-              Agregar
+            <button onClick={() => { if (grupoSeleccionado) { invalidarChat(); setGrupoSeleccionado(null); setClavesConfiguradas(false); setMensajes([]); } setVista('chats'); }}
+              className={`flex-1 min-h-14 px-1 py-4 text-sm font-semibold rounded-t-lg transition-colors focus-visible:outline-2 focus-visible:outline-blue-300 ${vista === 'chats' ? 'bg-blue-500/15 text-blue-200 border-b-2 border-blue-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+              Chats
+            </button>
+            <button onClick={() => { if (contactoSeleccionado) { invalidarChat(); setContactoSeleccionado(null); setConversacionId(null); setClavesConfiguradas(false); setMensajes([]); } setVista('grupos'); }}
+              className={`flex-1 min-h-14 px-1 py-4 text-sm font-semibold rounded-t-lg transition-colors focus-visible:outline-2 focus-visible:outline-blue-300 ${vista === 'grupos' ? 'bg-blue-500/15 text-blue-200 border-b-2 border-blue-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+              Grupos
             </button>
             <button onClick={() => setVista('solicitudes')}
               className={`flex-1 min-h-14 px-1 py-4 text-sm font-semibold rounded-t-lg transition-colors focus-visible:outline-2 focus-visible:outline-blue-300 relative ${vista === 'solicitudes' ? 'bg-blue-500/15 text-blue-200 border-b-2 border-blue-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
@@ -906,16 +921,9 @@ export default function ChatPage() {
                 </span>
               )}
             </button>
-            <button onClick={() => { if (grupoSeleccionado) { invalidarChat(); setGrupoSeleccionado(null); setClavesConfiguradas(false); setMensajes([]); } setVista('chats'); }}
-              className={`flex-1 min-h-14 px-1 py-4 text-sm font-semibold rounded-t-lg transition-colors focus-visible:outline-2 focus-visible:outline-blue-300 ${vista === 'chats' ? 'bg-blue-500/15 text-blue-200 border-b-2 border-blue-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-              Chats
-            </button>
-            <button onClick={() => { if (contactoSeleccionado) { invalidarChat(); setContactoSeleccionado(null); setConversacionId(null); setClavesConfiguradas(false); setMensajes([]); } setVista('grupos'); }}
-              className={`flex-1 min-h-14 px-1 py-4 text-sm font-semibold rounded-t-lg transition-colors focus-visible:outline-2 focus-visible:outline-blue-300 ${vista === 'grupos' ? 'bg-blue-500/15 text-blue-200 border-b-2 border-blue-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-              Grupos
-            </button>
           </div>
 
+          <button type="button" onClick={() => setVista('buscar')} aria-pressed={vista === 'buscar'} className="chat-agregar"><IconoChat tipo="agregar" />Agregar contacto</button>
           {resumen.error && <p role="status" className="p-3 text-xs text-amber-300">{resumen.error}</p>}
           {errorGrupos && <p role="alert" className="p-3 text-xs text-red-400">{errorGrupos}</p>}
           {avisoGrupos && <p role="status" className="p-3 text-xs text-green-400">{avisoGrupos}</p>}
@@ -929,28 +937,24 @@ export default function ChatPage() {
                     </svg>
                     <input type="search" name="buscar-conversaciones" aria-label="Buscar chat" autoComplete="off" autoCapitalize="none" spellCheck={false} data-lpignore="true" data-1p-ignore="true" value={busquedaChats} onChange={e => setBusquedaChats(e.target.value)}
                       className="w-full bg-gray-950 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      placeholder="Buscar chat" />
+                      placeholder="Buscar conversación" />
                   </div>
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                   {contactos.length === 0 && (
-                    <p className="text-xs text-gray-600 p-4">Todavía no tenés contactos. Usá Agregar para buscar usuarios.</p>
+                    <p className="text-xs text-gray-600 p-4">Todavía no tenés contactos. Usá Agregar contacto para buscar a alguien.</p>
                   )}
 
                   {[...contactos].sort((a,b) => resumen.actividad('privado',b.id) - resumen.actividad('privado',a.id))
                     .filter(c => c.username?.toLowerCase().includes(busquedaChats.toLowerCase()))
                     .map(c => (
                       <button key={c.id} onClick={() => seleccionarContacto(c)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-800 border-b border-gray-800 ${contactoSeleccionado?.id === c.id ? 'bg-gray-800' : ''}`}>
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${usuariosOnline.has(c.id) ? 'bg-green-500' : 'bg-gray-600'}`}></span>
-                          <p className="text-sm font-medium">{c.username}</p>
-                        </div>
-                        <p className="text-xs text-gray-500 ml-4">
-                          {usuariosOnline.has(c.id) ? 'En linea' : tiempoRelativo(c.ultima_conexion)}
-                        </p>
-                        {filaResumen('privado', c.id)}
+                        aria-current={contactoSeleccionado?.id === c.id ? 'true' : undefined}
+                        className={`chat-contacto ${contactoSeleccionado?.id === c.id ? 'chat-contacto-activo' : ''}`}>
+                        <AvatarChat nombre={c.username || 'Contacto'} online={usuariosOnline.has(c.id)} />
+                        <div className="chat-contacto-texto"><div className="chat-contacto-titulo"><p>{c.username}</p><time dateTime={resumen.buscarResumen('privado', c.id)?.ultima_fecha || undefined}>{fechaActividad(resumen.buscarResumen('privado', c.id)?.ultima_fecha)}</time></div>
+                        {filaResumen('privado', c.id)}</div>
                       </button>
                     ))}
                 </div>
@@ -980,7 +984,7 @@ export default function ChatPage() {
                         placeholder="Nombre del grupo" maxLength={80} />
                       <p className="text-xs text-gray-500 mb-1">Elegí contactos para invitar:</p>
                       <div className="max-h-40 overflow-y-auto space-y-1 mb-2">
-                        {contactos.length === 0 && <p className="text-xs text-gray-600">No tenes contactos todavia.</p>}
+                        {contactos.length === 0 && <p className="text-xs text-gray-600">Todavía no tenés contactos.</p>}
                         {contactos.map(c => (
                           <label key={c.id} className="flex items-center gap-2 text-xs text-gray-300">
                             <input type="checkbox" checked={miembrosNuevoGrupo.includes(c.id)}
@@ -1005,21 +1009,16 @@ export default function ChatPage() {
 
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                   {grupos.length === 0 && (
-                    <p className="text-xs text-gray-600 p-4">No tenes grupos aun.</p>
+                    <p className="text-xs text-gray-600 p-4">Todavía no tenés grupos.</p>
                   )}
                   {[...grupos].sort((a,b) => resumen.actividad('grupo',b.id) - resumen.actividad('grupo',a.id))
                     .filter(g => g.nombre?.toLowerCase().includes(busquedaGrupos.toLowerCase()))
                     .map(g => (
                       <div key={g.id}
-                        className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800 border-b border-gray-800 ${grupoSeleccionado?.id === g.id ? 'bg-gray-800' : ''}`}>
-                        <button onClick={() => seleccionarGrupo(g)} className="text-left flex-1 min-w-0">
-                          <p className="text-sm font-medium">{g.nombre}</p>
-                          <p className="text-xs text-gray-500">Grupo</p>
-                          {filaResumen('grupo',g.id)}
-                        </button>
-                        <button onClick={() => salirDeGrupo(g)}
-                          className="text-xs text-red-400 hover:text-red-300 ml-2">
-                          Salir
+                        className="chat-grupo-fila">
+                        <button onClick={() => seleccionarGrupo(g)} aria-current={grupoSeleccionado?.id === g.id ? 'true' : undefined} className={`chat-contacto ${grupoSeleccionado?.id === g.id ? 'chat-contacto-activo' : ''}`}>
+                          <AvatarChat nombre={g.nombre || 'Grupo'} grupo />
+                          <div className="chat-contacto-texto"><div className="chat-contacto-titulo"><p>{g.nombre}</p><time dateTime={resumen.buscarResumen('grupo', g.id)?.ultima_fecha || undefined}>{fechaActividad(resumen.buscarResumen('grupo', g.id)?.ultima_fecha)}</time></div>{filaResumen('grupo',g.id)}</div>
                         </button>
                       </div>
                     ))}
@@ -1029,11 +1028,13 @@ export default function ChatPage() {
 
             {vista === 'buscar' && (
               <div className="p-3">
-                <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                <h2 className="text-lg font-semibold mb-2">Agregar contacto</h2>
+                <p className="text-sm text-slate-400 mb-4">Buscá a una persona por su correo y enviale una solicitud.</p>
+                <input aria-label="Correo del contacto" value={busqueda} onChange={e => setBusqueda(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && buscarUsuarios()}
                   className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Buscar por email..." />
-                <button onClick={buscarUsuarios}
+                  placeholder="Correo electrónico" />
+                <button onClick={buscarUsuarios} disabled={buscando}
                   className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs">
                   {buscando ? 'Buscando...' : 'Buscar'}
                 </button>
@@ -1055,7 +1056,7 @@ export default function ChatPage() {
             {vista === 'solicitudes' && (
               <div className="p-3 space-y-3">
                 {solicitudesPendientes.length === 0 && invitacionesGrupo.length === 0 && (
-                  <p className="text-xs text-gray-600">No tenes solicitudes pendientes.</p>
+                  <div className="chat-lista-vacia"><IconoChat tipo="agregar" size={30} /><h2>Todo al día</h2><p>Las solicitudes de contacto e invitaciones a grupos aparecerán acá.</p></div>
                 )}
                 {invitacionesGrupo.map(i => (
                   <div key={i.id} className="bg-gray-800 rounded-lg p-3 border border-blue-900">
@@ -1098,7 +1099,7 @@ export default function ChatPage() {
             const esGrupo = !!grupoSeleccionado;
             const nombreDestino = esGrupo ? grupoSeleccionado.nombre : contactoSeleccionado?.username;
             const handleConfigurar = esGrupo ? configurarClavesGrupo : configurarClaves;
-            const handleEnviar = esGrupo ? enviarMensajeGrupo : enviarMensaje;
+            const handleEnviar = enviarTexto;
 
             if (!destino) {
               return (
@@ -1106,57 +1107,28 @@ export default function ChatPage() {
                   <div className="chat-bienvenida text-center px-6 max-w-md">
                     <div className="chat-bienvenida-icono" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z"/><path d="M8 9h8M8 13h5"/></svg></div>
                     <h2 className="text-xl font-semibold tracking-tight text-slate-100">Tus conversaciones, en un solo lugar</h2>
-                    <p className="text-sm leading-relaxed text-slate-400 mt-3">Elegí un chat o un grupo para comenzar. Si es tu primera vez, buscá a alguien desde Agregar.</p>
+                    <p className="text-sm leading-relaxed text-slate-400 mt-3">Elegí un chat o un grupo para comenzar. Si es tu primera vez, usá Agregar contacto para buscar a alguien.</p>
                   </div>
                 </div>
               );
             }
-            if (!clavesConfiguradas) {
-              return (
-                <div className="flex-1 min-h-0 overflow-y-auto p-6">
-                  <form autoComplete="off" onSubmit={e => { e.preventDefault(); if (!configurando) void handleConfigurar(); }} className="w-full max-w-md mx-auto my-4 bg-gray-900 rounded-xl border border-gray-800 p-6">
-                    <h2 className="text-lg font-semibold mb-2">Abrir conversación con {nombreDestino}</h2>
-                    {esGrupo && <button type="button" onClick={abrirMiembros} className="mb-4 rounded-lg border border-blue-700 px-4 py-2 text-sm text-blue-200">Información del grupo</button>}
-                    <p className="text-sm text-gray-300 mb-3">Ya iniciaste sesión. Ahora ingresá las dos claves compartidas de esta conversación para leer y enviar mensajes cifrados.</p>
-                    <p className="text-xs text-gray-400 mb-3">Estas claves no son la contraseña de tu cuenta. {esGrupo ? 'Todos los miembros deben usar las mismas.' : 'Vos y tu contacto deben usar las mismas.'} Acuérdenlas en persona o por otro medio de confianza.</p>
-                    <p className="text-xs text-gray-400 mb-5">Si todavía no hay mensajes, no podemos comprobar si coinciden con las de la otra persona. Cambiar lo que ingresás aquí no cambia las claves de los mensajes anteriores ni las de los demás.</p>
-                    <p className="text-xs text-blue-200 mb-4">Para una conversación nueva, acuerden dos frases distintas de al menos 12 caracteres. Eviten nombres, fechas y claves fáciles de adivinar.</p>
-                    {((claveVig.length > 0 && claveVig.length < 12) || (claveAes.length > 0 && claveAes.length < 12) || (claveVig && claveVig === claveAes)) && <p role="status" className="mb-4 text-xs text-amber-200">Estas claves ofrecen poca protección. Si son de una conversación existente, usá las originales para leerla; para una nueva, acuerden frases largas y distintas.</p>}
-                    <label htmlFor="clave-vig" className="text-xs text-gray-300">Clave compartida Vigenère</label>
-                    <input id="clave-vig" name="secreto-conversacion-uno" readOnly onFocus={e => { e.currentTarget.readOnly = false; }} onBlur={e => { e.currentTarget.readOnly = true; }} data-lpignore="true" data-1p-ignore="true" autoCapitalize="none" type={mostrarClaves ? "text" : "password"} autoComplete="off" spellCheck={false} disabled={configurando} value={claveVig} onChange={e => setClaveVig(e.target.value)}
-                      className="w-full mt-1 mb-4 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
-                      placeholder="Ingresá la clave acordada" />
-                    <label htmlFor="clave-aes" className="text-xs text-gray-300">Clave compartida AES</label>
-                    <input id="clave-aes" name="secreto-conversacion-dos" readOnly onFocus={e => { e.currentTarget.readOnly = false; }} onBlur={e => { e.currentTarget.readOnly = true; }} data-lpignore="true" data-1p-ignore="true" autoCapitalize="none" type={mostrarClaves ? "text" : "password"} autoComplete="off" spellCheck={false} disabled={configurando} value={claveAes} onChange={e => setClaveAes(e.target.value)}
-                      className="w-full mt-1 mb-6 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"
-                      placeholder="Ingresá la segunda clave acordada" />
-                    <label className="flex items-center gap-2 text-xs text-gray-300 mb-4">
-                      <input type="checkbox" checked={mostrarClaves} onChange={e => setMostrarClaves(e.target.checked)} /> Mostrar claves
-                    </label>
-                    <button type="submit" disabled={configurando}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm">
-                      {configurando ? 'Descifrando mensajes…' : 'Abrir conversación'}
-                    </button>
-                  </form>
-                </div>
-              );
-            }
+            if (!clavesConfiguradas) return <AbrirConversacion nombre={nombreDestino || 'Conversación'} grupo={esGrupo} vig={claveVig} aes={claveAes} mostrar={mostrarClaves} busy={configurando} onVig={setClaveVig} onAes={setClaveAes} onMostrar={setMostrarClaves} onAbrir={() => void handleConfigurar()} onGrupo={abrirMiembros} />;
             return (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div className="chat-destino shrink-0 px-6 py-3 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
-                  <div>
+                  <div className="chat-destino-persona"><AvatarChat nombre={nombreDestino || "Conversación"} grupo={esGrupo} online={!esGrupo && usuariosOnline.has(contactoSeleccionado?.id)} /><div>
                     <p className="text-sm font-medium">{nombreDestino}</p>
                     <p className="text-xs text-gray-500">
                       {otroEscribiendo
-                        ? (esGrupo ? `${otroEscribiendo} esta escribiendo...` : 'escribiendo...')
+                        ? (esGrupo ? `${otroEscribiendo} está escribiendo…` : 'Escribiendo…')
                         : esGrupo
                           ? 'Grupo'
                           : usuariosOnline.has(contactoSeleccionado?.id)
-                            ? 'En linea'
+                            ? 'En línea'
                             : tiempoRelativo(contactoSeleccionado?.ultima_conexion)}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                  </div></div>
+                  <details className="chat-acciones"><summary><IconoChat tipo="ajustes" /><span>Opciones</span></summary><div className="chat-acciones-panel">
                     <button onClick={cambiarClaves} className="text-xs text-blue-300 border border-gray-700 px-3 py-1.5 rounded-lg">Volver a ingresar claves</button>
                   {esGrupo && (
                     <div className="flex items-center gap-2">
@@ -1170,10 +1142,10 @@ export default function ChatPage() {
                       </button>
                     </div>
                   )}
-                  </div>
+                  </div></details>
                 </div>
-                <details key={esGrupo ? grupoSeleccionado.id : conversacionId} className="shrink-0 border-b border-slate-800 bg-slate-900/60 px-5 py-3 text-sm">
-                  <summary className="cursor-pointer text-blue-200">Configuración del chat · Duración de los mensajes: {esGrupo ? (plazoGrupo.listo ? nombrePlazo(plazoGrupo.plazo === 'grupo' ? plazoGrupo.maximo : Number(plazoGrupo.plazo)) : 'consultando…') : nombrePlazo(duracionPrivada.valor)}</summary>
+                <details key={esGrupo ? grupoSeleccionado.id : conversacionId} className="chat-duracion shrink-0 border-b border-slate-800 px-5 py-3 text-sm">
+                  <summary className="cursor-pointer text-blue-200">Duración de mensajes · {esGrupo ? (plazoGrupo.listo ? nombrePlazo(plazoGrupo.plazo === 'grupo' ? plazoGrupo.maximo : Number(plazoGrupo.plazo)) : 'consultando…') : nombrePlazo(duracionPrivada.valor)}</summary>
                   <div className="mt-4 max-w-lg space-y-3 pb-2">
                     <label className="block font-medium" htmlFor="duracion-chat">Duración de los mensajes</label>
                     <select id="duracion-chat" className="min-h-11 w-full rounded-xl border border-slate-600 bg-slate-950 p-3" value={esGrupo ? (plazoGrupo.plazo === 'grupo' ? String(plazoGrupo.maximo || 0) : plazoGrupo.plazo) : String(duracionPrivada.valor)} disabled={esGrupo ? !plazoGrupo.listo : !duracionPrivada.listo || duracionPrivada.busy} onChange={e=>{if(esGrupo)plazoGrupo.setPlazo(Number(e.target.value) === (plazoGrupo.maximo || 0) ? 'grupo' : e.target.value);else void duracionPrivada.guardar(Number(e.target.value));}}>
@@ -1191,7 +1163,9 @@ export default function ChatPage() {
                     <button onClick={cambiarClaves} className="ml-2 underline font-medium">Volver a ingresar las claves</button>
                   </div>
                 )}
+                <p className="chat-cifrado"><IconoChat tipo="candado" size={14} />Conversación cifrada</p>
                 <div ref={mensajesRef} className="chat-mensajes flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 md:p-6 space-y-4">
+                  {mensajes.filter(msg=>!vencido(msg.destruir_en)).length === 0 && <div className="chat-primer-mensaje"><IconoChat tipo="candado" size={28} /><h3>La conversación empieza acá</h3><p>Escribí el primer mensaje para comenzar.</p></div>}
                   {mensajes.filter(msg=>!vencido(msg.destruir_en)).map(msg => (
                     <div key={msg.id} className={`flex flex-col ${msg.emisor_id === usuario.id ? 'items-end' : 'items-start'}`}>
                       {esGrupo && msg.emisor_id !== usuario.id && (
@@ -1201,7 +1175,7 @@ export default function ChatPage() {
                         {msg.integro === false ? <p className="rounded-lg border border-red-300/30 bg-red-950/60 p-3 text-sm text-red-100">No se pudo abrir este mensaje. Las claves son incorrectas o el contenido fue alterado.</p> : <MensajeMedia texto={msg.texto} path={msg.archivo_path} vig={claveVig} aes={claveAes} expires={msg.destruir_en} />}
                       </div>
                       <div className="mt-1 flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-gray-600">{new Date(msg.created_at).toLocaleTimeString()}</span>
+                        <span className="text-xs text-gray-600">{new Date(msg.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</span>
                         {!esGrupo && msg.emisor_id === usuario.id && <CheckStatus enviado={true} leido={msg.leido} />}
                         {msg.integro === null && <span className="text-xs text-amber-300">Mensaje antiguo: no se puede comprobar su integridad.</span>}
                       </div>
@@ -1215,12 +1189,12 @@ export default function ChatPage() {
                   {errorMensaje && <p role="alert" className="text-red-400 text-xs">{errorMensaje}</p>}
                   <div className="flex gap-3">
                     <input value={mensaje} onChange={e => { setMensaje(e.target.value); notificarEscribiendo(); }}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mensaje.trim()) { e.preventDefault(); void handleEnviar(); } }}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mensaje.trim() && !enviandoTexto) { e.preventDefault(); void handleEnviar(); } }}
                       className="min-w-0 flex-1 bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-                      aria-label="Mensaje" placeholder="Escribe un mensaje..." />
-                    <button type="button" disabled={!mensaje.trim()} onClick={handleEnviar}
+                      aria-label="Mensaje" placeholder="Escribí un mensaje…" />
+                    <button type="button" disabled={!mensaje.trim() || enviandoTexto} onClick={handleEnviar} aria-label={enviandoTexto ? "Enviando mensaje" : "Enviar mensaje"}
                       className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-6 py-3 rounded-lg text-sm">
-                      Enviar
+                      {enviandoTexto ? <span className="chat-enviando">Enviando…</span> : <IconoChat tipo="enviar" size={22} />}
                     </button>
                   </div>
                   </AdjuntarMedia>
