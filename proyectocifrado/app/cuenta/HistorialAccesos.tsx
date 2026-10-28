@@ -44,7 +44,7 @@ export default function HistorialAccesos({ userId }: { userId: string }) {
   return <section id="actividad" aria-labelledby="history-title" className="panel-cuenta mt-8 rounded-2xl border border-slate-800 bg-gray-900 p-6 sm:p-8">
     <div className="flex flex-wrap gap-4 justify-between items-start">
       <div><h2 id="history-title" className="text-xl font-semibold">Historial de seguridad</h2>
-        <p className="text-sm text-slate-300 mt-2">Acá podés ver cuándo ingresaste, cerraste sesión o cambiaste la seguridad de tu cuenta.</p></div>
+        <p className="text-sm text-slate-300 mt-2">Tus últimos ingresos y cambios de contraseña.</p></div>
       <button disabled={loading} onClick={() => setReload(v => v + 1)} className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-blue-200 hover:bg-slate-700 disabled:opacity-50">{loading ? 'Actualizando…' : 'Actualizar'}</button>
     </div>
     {loading ? <p role="status" className="mt-6 rounded-xl bg-slate-950/40 p-5 text-sm text-slate-300">Consultando actividad…</p> : error ? <p role="alert" className="historial-vacio text-amber-300">{error}</p> : filtrados.length === 0 ?
@@ -62,7 +62,7 @@ export default function HistorialAccesos({ userId }: { userId: string }) {
         {limite < filtrados.length && <button className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-blue-200 hover:bg-slate-700 disabled:opacity-50" onClick={() => setLimite(n => n + 5)}>Ver más actividad ↓</button>}
         {limite > 5 && <button className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm text-blue-200 hover:bg-slate-700 disabled:opacity-50" onClick={() => setLimite(5)}>Ver menos</button>}
       </div></>}
-    <p className="mt-6 text-sm leading-relaxed text-slate-300">Hasta 50 registros de los últimos 90 días. Pueden tardar en aparecer; este historial no es una lista de dispositivos conectados.</p>
-    <p className="mt-4 text-sm text-slate-300">¿No reconocés una actividad? <a className="text-blue-300 underline underline-offset-4" href="#contrasena">Revisá tu contraseña</a>.</p>
+    <details className="cuenta-ayuda mt-6"><summary>Sobre este historial</summary><p className="mt-3 text-sm leading-relaxed text-slate-300">Muestra hasta 50 registros de los últimos 90 días. No es una lista de dispositivos conectados y algunos eventos pueden tardar en aparecer.</p></details>
+    <p className="mt-4 text-sm text-slate-300">¿No reconocés una actividad? <a className="text-blue-300 underline underline-offset-4" href="#contrasena" onClick={() => { const panel = document.getElementById('contrasena'); if (panel instanceof HTMLDetailsElement) panel.open = true; }}>Cambiá tu contraseña</a>.</p>
   </section>;
 }

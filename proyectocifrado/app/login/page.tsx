@@ -131,6 +131,7 @@ export default function LoginPage() {
         </button>
 
         {mensaje && <p className="mt-4 text-sm text-center text-yellow-400">{mensaje}</p>}
+        <p className="mt-6 text-center text-xs text-slate-400"><a href="/privacidad" className="hover:text-blue-300 hover:underline">Privacidad y uso de datos</a></p>
       </div>
     </main>
   );
