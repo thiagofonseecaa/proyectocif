@@ -12,8 +12,7 @@ function ImagenAmpliable({ url, nombre }: { url: string; nombre: string }) {
       <img src={url} alt={nombre} className="max-h-80 max-w-full rounded-xl object-contain" />
     </button>
     <dialog ref={dialog} aria-label="Imagen ampliada" className="fixed inset-0 m-auto w-[95vw] max-w-5xl max-h-[94dvh] overflow-auto rounded-2xl border border-slate-600 bg-slate-950 p-4 text-white shadow-2xl backdrop:bg-black/80" onClick={e => { if (e.target === e.currentTarget) dialog.current?.close(); }}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="min-w-0 flex-1 break-all text-sm text-slate-300">{nombre}</p>
+      <div className="mb-4 flex items-center justify-end">
         <button type="button" autoFocus onClick={() => dialog.current?.close()} className="min-h-11 rounded-xl border border-slate-500 px-4 py-2">Cerrar ✕</button>
       </div>
       <img src={url} alt={nombre} className="mx-auto max-h-[70dvh] max-w-full object-contain" />
