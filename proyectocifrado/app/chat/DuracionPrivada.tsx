@@ -7,7 +7,7 @@ export function useDuracionPrivada(id?: string | null) {
  useEffect(()=>{
   if(!id)return;
   let active=true;
-  async function cargar(){const r=await supabase.rpc('p10_retencion_privada',{p_conversacion:id});if(active)setEstado({id:id!,valor:r.error?86400:Number(r.data),error:r.error?'La duración configurable necesita activar el paso 10 en Supabase.':''});}
+  async function cargar(){const r=await supabase.rpc('p10_retencion_privada',{p_conversacion:id});if(active)setEstado({id:id!,valor:r.error?86400:Number(r.data),error:r.error?'No se pudo consultar la duración. Reintentaremos en unos segundos.':''});}
   void cargar();const timer=setInterval(()=>void cargar(),10000);
   return()=>{active=false;clearInterval(timer);};
  },[id]);

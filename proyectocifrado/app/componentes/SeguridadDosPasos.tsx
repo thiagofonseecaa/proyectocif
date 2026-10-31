@@ -46,7 +46,7 @@ export default function SeguridadDosPasos({ userId }: { userId: string }) {
     if (current.error) throw current.error;
     if (current.data.totp.length >= 2) throw new Error('Ya tenés dos autenticadores. Eliminá uno antes de agregar otro.');
     if (current.data.all.some(f => f.factor_type === 'totp' && f.status === 'unverified')) throw new Error('Hay una configuración pendiente. Actualizá la lista y cancelala antes de comenzar otra.');
-    const r = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'Mensajería cifrada', friendlyName: current.data.totp.length ? 'Autenticador de respaldo' : 'Autenticador principal' });
+    const r = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'Entre Claves', friendlyName: current.data.totp.length ? 'Autenticador de respaldo' : 'Autenticador principal' });
     if (r.error) throw r.error;
     if (r.data.type !== 'totp' || !alive.current) return;
     setAlta({ id: r.data.id, qr: r.data.totp.qr_code, secret: r.data.totp.secret }); setCodigo(''); setEntendido(false);
