@@ -7,7 +7,7 @@ import { nombreAutenticador } from './nombreAutenticador';
 type Factor = { id: string; friendly_name?: string; status: string };
 type Alta = { id: string; qr: string; secret: string };
 
-export default function SeguridadDosPasos({ userId }: { userId: string }) {
+export default function SeguridadDosPasos({ userId, onEstadoCambio }: { userId: string; onEstadoCambio?: (estado: string) => void }) {
   const [factores, setFactores] = useState<Factor[]>([]);
   const [alta, setAlta] = useState<Alta | null>(null), [codigo, setCodigo] = useState('');
   const [quitar, setQuitar] = useState<string | null>(null);
@@ -73,6 +73,8 @@ export default function SeguridadDosPasos({ userId }: { userId: string }) {
     await cargar(); setAviso('Autenticador eliminado.');
   }
   const activos = factores.filter(f => f.status === 'verified');
+  const estadoResumen = !listo ? error ? 'No disponible' : 'Comprobando…' : activos.length ? 'Activada' : alta ? 'Configuración pendiente' : 'Sin activar';
+  useEffect(() => { onEstadoCambio?.(estadoResumen); }, [estadoResumen, onEstadoCambio]);
   const boton = 'min-h-11 rounded-lg border border-slate-600 px-4 py-2 text-sm disabled:opacity-50';
   return <section id="seguridad" aria-labelledby="dos-pasos-title" className="panel-cuenta mt-6 rounded-2xl border border-slate-800 bg-gray-900 p-6 sm:p-8">
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="dos-pasos-title" className="text-lg font-semibold">Protección de acceso</h2><button disabled={busy || !!alta} onClick={() => void ejecutar(cargar)} className={boton}>Actualizar estado</button></div>

@@ -86,11 +86,11 @@ export default function LoginPage() {
         <p className="text-gray-500 text-sm mb-8 text-center">Tu espacio para conversar en privado.</p>
 
         <div className="flex gap-2 mb-6">
-          <button disabled={cargando} onClick={() => { setEsRegistro(false); setMensaje(''); setRepetida(''); setAceptaCondiciones(false); }}
+          <button aria-pressed={!esRegistro} disabled={cargando} onClick={() => { setEsRegistro(false); setMensaje(''); setRepetida(''); setAceptaCondiciones(false); }}
             className={`flex-1 py-2 rounded-lg text-sm ${!esRegistro ? 'bg-blue-600 text-white' : 'border border-gray-700 text-gray-400'}`}>
             Iniciar sesión
           </button>
-          <button disabled={cargando} onClick={() => { setEsRegistro(true); setMensaje(''); setAceptaCondiciones(false); }}
+          <button aria-pressed={esRegistro} disabled={cargando} onClick={() => { setEsRegistro(true); setMensaje(''); setAceptaCondiciones(false); }}
             className={`flex-1 py-2 rounded-lg text-sm ${esRegistro ? 'bg-blue-600 text-white' : 'border border-gray-700 text-gray-400'}`}>
             Registrarse
           </button>
@@ -125,25 +125,7 @@ export default function LoginPage() {
         )}
 
         {esRegistro && <div className="mt-4"><label htmlFor="registro-repetida" className="text-xs text-gray-500">Repetir contraseña</label><input id="registro-repetida" autoComplete="new-password" type={verPassword ? 'text' : 'password'} required minLength={12} disabled={cargando} value={repetida} onChange={e => setRepetida(e.target.value)} className="w-full mt-1 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm" /></div>}
-        {esRegistro && (
-          <div className="mt-3 mb-4 bg-gray-950 border border-gray-800 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-2 font-medium">Usá al menos 12 caracteres. Para reforzarla, combiná:</p>
-            <ul className="space-y-1">
-              <li className={`text-xs flex items-center gap-2 ${password.length >= 12 ? 'text-green-400' : 'text-gray-600'}`}>
-                {password.length >= 12 ? '✓' : '○'} Al menos 12 caracteres
-              </li>
-              <li className={`text-xs flex items-center gap-2 ${/[A-Z]/.test(password) ? 'text-green-400' : 'text-gray-600'}`}>
-                {/[A-Z]/.test(password) ? '✓' : '○'} Una letra mayuscula (ej: A, B, C)
-              </li>
-              <li className={`text-xs flex items-center gap-2 ${/[0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`}>
-                {/[0-9]/.test(password) ? '✓' : '○'} Un numero (ej: 1, 2, 3)
-              </li>
-              <li className={`text-xs flex items-center gap-2 ${/[^A-Za-z0-9]/.test(password) ? 'text-green-400' : 'text-gray-600'}`}>
-                {/[^A-Za-z0-9]/.test(password) ? '✓' : '○'} Un simbolo (ej: !, @, #, $)
-              </li>
-            </ul>
-          </div>
-        )}
+        {esRegistro && <p className="mt-3 mb-4 text-sm text-slate-300">Usá al menos 12 caracteres. Elegí una frase larga y distinta de las que usás en otros servicios.</p>}
 
         {!esRegistro && <div className="my-4 text-right"><a href="/recuperar-contrasena" className="text-sm text-blue-300 hover:underline">Olvidé mi contraseña</a></div>}
 
@@ -155,7 +137,7 @@ export default function LoginPage() {
         </form>
 
         {mensaje && <p role="status" className="mt-4 text-sm text-center text-yellow-400">{mensaje}</p>}
-        <p className="mt-6 text-center text-xs text-slate-400"><a href="/terminos" className="hover:text-blue-300 hover:underline">Términos</a><span aria-hidden="true"> · </span><a href="/privacidad" className="hover:text-blue-300 hover:underline">Privacidad y uso de datos</a></p>
+        <p className="mt-6 text-center text-xs text-slate-400"><a href="/ayuda" className="hover:text-blue-300 hover:underline">Ayuda</a><span aria-hidden="true"> · </span><a href="/terminos" className="hover:text-blue-300 hover:underline">Términos</a><span aria-hidden="true"> · </span><a href="/privacidad" className="hover:text-blue-300 hover:underline">Privacidad y uso de datos</a></p>
       </div>
     </main>
   );

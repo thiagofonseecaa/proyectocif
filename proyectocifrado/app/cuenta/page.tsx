@@ -9,10 +9,15 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
-import { CORREO_SOPORTE } from '../../lib/condiciones';
 
 function fecha(value?: string) {
   return value ? new Date(value).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' }) : 'Sin información';
+}
+function cerrarOtrosAjustes(abierto: HTMLDetailsElement) {
+  if (!abierto.open) return;
+  abierto.parentElement?.querySelectorAll<HTMLDetailsElement>('details[name="ajustes-cuenta"]').forEach(otro => {
+    if (otro !== abierto && otro.open) otro.open = false;
+  });
 }
 function mensajeError(code?: string) {
   switch (code) {
@@ -31,6 +36,7 @@ export default function MiCuenta() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState('');
+  const [estadoMfa, setEstadoMfa] = useState('Comprobando…');
   const [loading, setLoading] = useState(true), [loadError, setLoadError] = useState('');
   const [retry, setRetry] = useState(0), [profileError, setProfileError] = useState('');
   const [actual, setActual] = useState(''), [nueva, setNueva] = useState(''), [repetida, setRepetida] = useState('');
@@ -138,7 +144,7 @@ export default function MiCuenta() {
             </dl>
             <details className="perfil-detalles"><summary>Más datos de la cuenta</summary><p className="mt-3 text-sm text-slate-300">Cuenta creada el {fecha(user.created_at)}.</p></details>
           </section>
-        <details id="contrasena" className="cuenta-acordeon panel-cuenta" onToggle={e => { if (!e.currentTarget.open && !busy) { setActual(''); setNueva(''); setRepetida(''); setCode(''); setNeedsCode(false); setVisible(false); setError(''); setSuccess(''); } }}>
+        <details name="ajustes-cuenta" id="contrasena" className="cuenta-acordeon panel-cuenta" onToggle={e => { cerrarOtrosAjustes(e.currentTarget); if (!e.currentTarget.open && !busy) { setActual(''); setNueva(''); setRepetida(''); setCode(''); setNeedsCode(false); setVisible(false); setError(''); setSuccess(''); } }}>
           <summary><IconoCuenta tipo="clave" /><span><strong>Cambiar contraseña</strong><span>Actualizá la contraseña que usás para ingresar.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
           <div className="cuenta-acordeon-cuerpo">
           <p className="mb-5 text-sm text-slate-300">Este cambio no modifica las claves de tus conversaciones.</p>
@@ -156,22 +162,19 @@ export default function MiCuenta() {
           <p className="mt-5 text-sm"><Link href="/recuperar-contrasena" className="text-blue-300 hover:underline">Olvidé mi contraseña actual</Link></p>
           </div>
         </details>
-        <details className="cuenta-acordeon panel-cuenta">
-          <summary><IconoCuenta tipo="escudo" /><span><strong>Verificación en dos pasos</strong><span>Protegé tu cuenta con un código adicional.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="cuenta-acordeon-cuerpo"><SeguridadDosPasos key={'mfa-' + user.id} userId={user.id} /></div>
+        <details name="ajustes-cuenta" className="cuenta-acordeon panel-cuenta" onToggle={e => cerrarOtrosAjustes(e.currentTarget)}>
+          <summary><IconoCuenta tipo="escudo" /><span><strong>Verificación en dos pasos</strong><span>Protegé tu cuenta con un código adicional.</span><span className="cuenta-estado" data-activo={estadoMfa === 'Activada'}>{estadoMfa}</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo"><SeguridadDosPasos key={'mfa-' + user.id} userId={user.id} onEstadoCambio={setEstadoMfa} /></div>
         </details>
-        <details className="cuenta-acordeon panel-cuenta">
+        <details name="ajustes-cuenta" className="cuenta-acordeon panel-cuenta" onToggle={e => cerrarOtrosAjustes(e.currentTarget)}>
           <summary><IconoCuenta tipo="actividad" /><span><strong>Actividad de la cuenta</strong><span>Revisá tus ingresos y cambios recientes.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
           <div className="cuenta-acordeon-cuerpo"><HistorialAccesos key={user.id} userId={user.id} /></div>
         </details>
-        <details className="cuenta-acordeon panel-cuenta">
-          <summary><IconoCuenta tipo="ayuda" /><span><strong>Ayuda y contacto</strong><span>Consultá cómo usar el servicio o pedí asistencia.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="cuenta-acordeon-cuerpo text-sm text-slate-300 space-y-3"><p>Consultá tus mensajes en Chats y las invitaciones en Solicitudes. La web no envía notificaciones al celular cuando está cerrada.</p><p>Para leer una conversación, necesitás las dos claves acordadas con sus integrantes. Recuperar la contraseña de acceso no recupera esas claves.</p><p>¿Necesitás ayuda? Escribí a <a href={'mailto:' + CORREO_SOPORTE} className="text-blue-300 underline">{CORREO_SOPORTE}</a>. No envíes contraseñas ni códigos del autenticador.</p><Link href="/chat" className="inline-block text-blue-300 hover:underline">Ir a mis conversaciones →</Link></div>
-        </details>
-        <details className="cuenta-acordeon panel-cuenta">
-          <summary><IconoCuenta tipo="privacidad" /><span><strong>Privacidad y uso de datos</strong><span>Conocé qué información utiliza Entre Claves.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="cuenta-acordeon-cuerpo text-sm text-slate-300 space-y-3"><p>Usamos los datos de tu cuenta para permitir el acceso, conectar tus contactos y mantener tus conversaciones.</p><p>Los mensajes y adjuntos se cifran antes de enviarse. Las claves de las conversaciones son distintas de tu contraseña de acceso.</p><Link href="/privacidad" className="inline-block text-blue-300 hover:underline">Leer privacidad y uso de datos →</Link></div>
-        </details>
+        <nav className="cuenta-enlaces" aria-label="Ayuda e información del servicio">
+          <Link href="/ayuda" className="cuenta-enlace panel-cuenta"><IconoCuenta tipo="ayuda" /><span><strong>Ayuda y contacto</strong><span>Respuestas para empezar y soporte del equipo.</span></span><span aria-hidden="true">→</span></Link>
+          <Link href="/privacidad" className="cuenta-enlace panel-cuenta"><IconoCuenta tipo="privacidad" /><span><strong>Privacidad y uso de datos</strong><span>Qué información utilizamos y cómo consultar sobre ella.</span></span><span aria-hidden="true">→</span></Link>
+          <Link href="/terminos" className="cuenta-enlace panel-cuenta"><IconoCuenta tipo="documento" /><span><strong>Términos de uso</strong><span>Condiciones de uso y alcance del servicio.</span></span><span aria-hidden="true">→</span></Link>
+        </nav>
       </div>}
     </div>
   </main>;
