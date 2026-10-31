@@ -33,7 +33,7 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     if (cargando) return;
-    if (!aceptaCondiciones) { setMensaje('Para continuar, aceptá los términos de uso y leé la información de privacidad.'); return; }
+    if (esRegistro && !aceptaCondiciones) { setMensaje('Para continuar, aceptá los términos de uso y leé la información de privacidad.'); return; }
     if (!email.trim() || !password) {
       setMensaje('Ingresá tu correo y contraseña.');
       return;
@@ -128,8 +128,8 @@ export default function LoginPage() {
 
         {!esRegistro && <div className="my-4 text-right"><a href="/recuperar-contrasena" className="text-sm text-blue-300 hover:underline">Olvidé mi contraseña</a></div>}
 
-        <div className="aceptacion-condiciones"><label><input type="checkbox" checked={aceptaCondiciones} onChange={e => setAceptaCondiciones(e.target.checked)} disabled={cargando} /><span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer">Términos de uso</a> y he leído la <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label></div>
-        <button onClick={handleSubmit} disabled={cargando || !aceptaCondiciones}
+        {esRegistro && <div className="aceptacion-condiciones"><label><input type="checkbox" checked={aceptaCondiciones} onChange={e => setAceptaCondiciones(e.target.checked)} disabled={cargando} /><span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer">Términos de uso</a> y he leído la <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label></div>}
+        <button onClick={handleSubmit} disabled={cargando || (esRegistro && !aceptaCondiciones)}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm disabled:opacity-50">
           {cargando ? 'Cargando...' : esRegistro ? 'Crear cuenta' : 'Ingresar'}
         </button>
