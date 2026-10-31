@@ -1,16 +1,15 @@
 'use client';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { supabase } from '../../lib/supabase';
-import { MEDIA_BUCKET, MAX_MEDIA_BYTES, descifrarArchivo, leerArchivo, validarArchivo } from '../../lib/media';
+import { useAdjunto } from './useAdjunto';
+import { DOCUMENT_ACCEPT, MAX_MEDIA_BYTES, leerArchivo, validarArchivo, type MediaInfo } from '../../lib/media';
 
 
 function ImagenAmpliable({ url, nombre }: { url: string; nombre: string }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const abrir = () => { if (dialog.current && !dialog.current.open) dialog.current.showModal(); };
   return <>
-    <button type="button" onClick={abrir} aria-label={'Ampliar imagen: ' + nombre} className="block max-w-full rounded-xl focus-visible:outline-2 focus-visible:outline-blue-200">
+    <button type="button" onClick={abrir} aria-label={'Ampliar imagen: ' + nombre} className="media-imagen-abrir">
       <img src={url} alt={nombre} className="max-h-80 max-w-full rounded-xl object-contain" />
-      <span className="mt-2 block text-xs underline">Tocá para ampliar</span>
     </button>
     <dialog ref={dialog} aria-label="Imagen ampliada" className="fixed inset-0 m-auto w-[95vw] max-w-5xl max-h-[94dvh] overflow-auto rounded-2xl border border-slate-600 bg-slate-950 p-4 text-white shadow-2xl backdrop:bg-black/80" onClick={e => { if (e.target === e.currentTarget) dialog.current?.close(); }}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -23,50 +22,30 @@ function ImagenAmpliable({ url, nombre }: { url: string; nombre: string }) {
   </>;
 }
 
-export function MensajeMedia({ texto, path, vig, aes, expires }: { texto: string; path?: string; vig: string; aes: string; expires?: string }) {
-  const info = leerArchivo(texto, path);
-  const [url, setUrl] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
-  const [expired, setExpired] = useState(() => !!expires && Date.parse(expires) <= Date.now());
-  const [contenido, setContenido] = useState({ texto, path, vig, aes, expires });
-  if (contenido.texto !== texto || contenido.path !== path || contenido.vig !== vig || contenido.aes !== aes || contenido.expires !== expires) {
-    setContenido({ texto, path, vig, aes, expires }); setUrl(''); setError(''); setBusy(false);
-    setExpired(!!expires && Date.parse(expires) <= new Date().getTime());
-  }
-  const generation = useRef(0), objectUrl = useRef('');
-  useEffect(() => {
-    generation.current++;
-    const clear = () => { generation.current++; URL.revokeObjectURL(objectUrl.current); objectUrl.current = ''; };
-    const remaining = expires ? new Date(expires).getTime() - Date.now() : Infinity;
-    const timer = Number.isFinite(remaining) ? setTimeout(() => { clear(); setUrl(''); setExpired(true); }, Math.max(0, Math.min(remaining, 2147483647))) : undefined;
-    return () => { clear(); clearTimeout(timer); };
-  }, [texto, path, vig, aes, expires]);
-  if (!info) return <p className="text-sm">{path ? '[No se pudo leer el adjunto con estas claves]' : texto}</p>;
-  const load = async () => {
-    if (busy || expired) return;
-    const operation = generation.current;
-    setBusy(true); setError('');
-    try {
-      const { data, error: failure } = await supabase.storage.from(MEDIA_BUCKET).download(info.path);
-      if (failure || !data) throw new Error('No se pudo descargar. Revisá tu conexión y el acceso al chat.');
-      const plain = await descifrarArchivo(data, info, vig, aes);
-      if (operation !== generation.current) return;
-      objectUrl.current = URL.createObjectURL(plain); setUrl(objectUrl.current);
-    } catch (e) { if (operation === generation.current) setError((e as Error).message); }
-    finally { if (operation === generation.current) setBusy(false); }
-  };
-  return <div className="space-y-2 max-w-full">
-    <p className="text-sm break-all">{info.mime.startsWith('image/') ? 'Imagen' : info.mime.startsWith('audio/') ? 'Audio' : 'Video'} · {info.name}</p>
-    <p className="text-xs opacity-70">{(info.size / 1024 / 1024).toFixed(1)} MB</p>
-    {expired ? <p className="text-xs">Adjunto vencido.</p> : url ? <>
-      {info.mime.startsWith('audio/') ? <audio controls preload="metadata" src={url} className="max-w-full" />
-        : info.mime.startsWith('image/') ? <ImagenAmpliable key={url} url={url} nombre={info.name} /> : <video controls playsInline preload="metadata" src={url} className="max-w-full max-h-80 rounded" />}
-      <a href={url} download={info.name} className="text-xs underline">Descargar archivo</a>
-    </> : <button type="button" onClick={load} disabled={busy} className="border rounded px-3 py-2 text-xs disabled:opacity-50">{busy ? 'Descifrando…' : (info.mime.startsWith('image/') ? 'Ver imagen' : 'Reproducir archivo')}</button>}
-    {error && <p role="alert" className="text-xs text-red-300">{error}</p>}
+function ContenidoAdjunto({ info, vig, aes, expires }: { info: MediaInfo; vig: string; aes: string; expires?: string }) {
+  const contenedor = useRef<HTMLDivElement>(null);
+  const media = useAdjunto(info, vig, aes, expires, contenedor);
+  const imagen = info.mime.startsWith('image/'), audio = info.mime.startsWith('audio/'), video = info.mime.startsWith('video/');
+  return <div ref={contenedor} className={imagen ? 'media-imagen' : 'media-archivo'}>
+    {media.expired ? <p className="media-estado">Adjunto vencido.</p> : imagen ? <>
+      {media.url ? <ImagenAmpliable url={media.url} nombre={info.name} /> : <div className="media-imagen-espera" role="status"><span aria-hidden="true">▧</span>{media.error ? 'No se pudo cargar la imagen' : media.busy ? 'Descifrando imagen…' : 'Cargando imagen…'}</div>}
+    </> : <>
+      <div className="media-archivo-cabecera"><span aria-hidden="true" className="media-archivo-icono">{audio ? '♫' : video ? '▷' : '▤'}</span><div><p>{audio ? 'Audio' : video ? 'Video' : info.name}</p><span>{audio ? 'Mensaje de audio' : video ? info.name : info.name.split('.').pop()?.toUpperCase()} · {(info.size / 1024 / 1024).toFixed(1)} MB</span></div></div>
+      {media.url ? audio ? <audio controls preload="metadata" src={media.url} className="max-w-full" /> : video ? <video controls playsInline preload="metadata" src={media.url} className="max-w-full max-h-80 rounded-xl" /> : null : <button type="button" onClick={media.cargar} disabled={media.busy} className="media-cargar">{media.busy ? 'Descifrando…' : audio || video ? 'Cargar para reproducir' : 'Preparar descarga'}</button>}
+      {media.url && <a href={media.url} download={info.name} className="media-descargar">Descargar {audio ? 'audio' : video ? 'video' : 'documento'} ↓</a>}
+    </>}
+    {media.error && !media.expired && <div className="media-error"><p role="alert">{media.error}</p><button type="button" onClick={media.cargar} disabled={media.busy}>Reintentar</button></div>}
   </div>;
 }
 
+export function MensajeMedia({ texto, path, vig, aes, expires }: { texto: string; path?: string; vig: string; aes: string; expires?: string }) {
+  const info = leerArchivo(texto, path);
+  if (!info) return <p className="text-sm">{path ? '[No se pudo leer el adjunto con estas claves]' : texto}</p>;
+  return <ContenidoAdjunto key={JSON.stringify([texto, path, vig, aes, expires])} info={info} vig={vig} aes={aes} expires={expires} />;
+}
+
 export function AdjuntarMedia({ onSend, children }: { onSend: (file: File) => Promise<void>; children?: ReactNode }) {
+  const [menu, setMenu] = useState(false);
   const [file, setFile] = useState<File | null>(null), [preview, setPreview] = useState('');
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false), [requesting, setRequesting] = useState(false), [seconds, setSeconds] = useState(0);
@@ -90,7 +69,7 @@ export function AdjuntarMedia({ onSend, children }: { onSend: (file: File) => Pr
       validarArchivo(candidate);
       const url = URL.createObjectURL(candidate);
       URL.revokeObjectURL(previewUrl.current); previewUrl.current = url;
-      setPreview(url); setFile(candidate); setError('');
+      setPreview(url); setFile(candidate); setError(''); setMenu(false);
     }
     catch (e) { setError((e as Error).message); }
   };
@@ -135,26 +114,24 @@ export function AdjuntarMedia({ onSend, children }: { onSend: (file: File) => Pr
     finally { sending.current = false; if (mounted.current) setBusy(false); }
   };
   const accion = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-100 hover:bg-blue-500/20 disabled:opacity-40';
-  const seleccionar = (accept: string) => { if (input.current) { input.current.accept = accept; input.current.click(); } };
+  const seleccionar = (accept: string) => { setMenu(false); if (input.current) { input.current.accept = accept; input.current.click(); } };
   const icono = (tipo: string) => <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{tipo === 'foto' ? <><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/></> : tipo === 'video' ? <><rect x="3" y="6" width="12" height="12" rx="3"/><path d="m15 10 6-3v10l-6-3"/></> : tipo === 'archivo-audio' ? <><path d="M9 18V5l11-2v13M9 8l11-2"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></> : <><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></>}</svg>;
   return <div className="space-y-3">
     <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,video/mp4,video/webm,.m4a" className="hidden"
       onChange={e => { const candidate = e.target.files?.[0]; if (candidate) choose(candidate); e.target.value = ''; }} />
-    <details className="chat-adjuntos"><summary>{recording ? '● Grabando audio · Ver controles' : requesting ? 'Esperando micrófono…' : '＋ Adjuntar o grabar audio'}</summary><div className="flex flex-wrap gap-2 items-center text-xs">
-      {[['foto', 'Fotos y videos', 'image/jpeg,image/png,image/webp,video/mp4,video/webm'], ['archivo-audio', 'Subir audio', 'audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,.m4a']].map(([tipo, texto, formatos]) => <button type="button" key={tipo} disabled={busy || recording || requesting} onClick={() => seleccionar(formatos)} className={accion}>{icono(tipo)}{texto}</button>)}
-      {!recording ? <button type="button" disabled={busy || requesting || !!file} onClick={record} className={accion}>{icono('audio')}{requesting ? 'Esperando micrófono…' : 'Grabar voz'}</button>
-        : <><span role="status" className="text-red-400">Grabando {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} / 5:00</span>
-          <button type="button" onClick={() => recorder.current?.stop()} className={accion}>Finalizar audio</button>
-          <button type="button" onClick={() => { cancelled.current = true; recorder.current?.stop(); }}>Cancelar</button></>}
-      <span className="text-gray-400">Hasta 20 MB por archivo · Grabación de hasta 5 min</span>
-    </div></details>
+    {menu && !file && !recording && !requesting && !busy && <div id="media-opciones" className="media-menu" aria-label="Opciones para adjuntar">
+      {[['foto', 'Foto o video', 'image/jpeg,image/png,image/webp,video/mp4,video/webm'], ['archivo-audio', 'Audio guardado', 'audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,.m4a'], ['documento', 'Documento', DOCUMENT_ACCEPT]].map(([tipo, texto, formatos]) => <button type="button" key={tipo} onClick={() => seleccionar(formatos)}>{tipo === 'documento' ? <span aria-hidden="true">▤</span> : icono(tipo)}{texto}</button>)}
+      <p>Hasta 20 MB · PDF, Office, texto y multimedia</p>
+    </div>}
+    {requesting && <p role="status" className="media-grabacion">Esperando permiso del micrófono…</p>}
+    {recording && <div className="media-grabacion"><span role="status">● Grabando {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} / 5:00</span><button type="button" onClick={() => recorder.current?.stop()} className={accion}>Finalizar</button><button type="button" onClick={() => { cancelled.current = true; recorder.current?.stop(); }}>Cancelar</button></div>}
     {file && <div className="rounded-2xl border border-slate-600 bg-slate-800/70 p-4 space-y-3">
       <p className="text-xs break-all">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p>
-      {preview && (validarArchivo(file).startsWith('audio/') ? <audio controls src={preview} className="max-w-full" /> : validarArchivo(file).startsWith('image/') ? <img src={preview} alt="Vista previa del adjunto" className="max-h-40 max-w-full rounded-xl object-contain" /> : <video controls playsInline src={preview} className="max-h-40 max-w-full" />)}
-      <div className="flex gap-3 text-xs"><button type="button" onClick={send} disabled={busy} className="min-h-11 rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium disabled:opacity-50">{busy ? 'Cifrando y enviando…' : (validarArchivo(file).startsWith('image/') ? 'Enviar foto' : validarArchivo(file).startsWith('audio/') ? 'Enviar audio' : 'Enviar video')}</button>
+      {preview && (validarArchivo(file).startsWith('audio/') ? <audio controls src={preview} className="max-w-full" /> : validarArchivo(file).startsWith('image/') ? <img src={preview} alt="Vista previa del adjunto" className="max-h-40 max-w-full rounded-xl object-contain" /> : validarArchivo(file).startsWith('video/') ? <video controls playsInline src={preview} className="max-h-40 max-w-full" /> : <div className="media-documento-previa"><span aria-hidden="true">▤</span><p>Documento listo para enviar</p></div>)}
+      <div className="flex gap-3 text-xs"><button type="button" onClick={send} disabled={busy} className="min-h-11 rounded-xl bg-blue-600 px-5 py-3 text-sm font-medium disabled:opacity-50">{busy ? 'Cifrando y enviando…' : (validarArchivo(file).startsWith('image/') ? 'Enviar foto' : validarArchivo(file).startsWith('audio/') ? 'Enviar audio' : validarArchivo(file).startsWith('video/') ? 'Enviar video' : 'Enviar documento')}</button>
         <button type="button" className={accion} onClick={descartar} disabled={busy}>Descartar</button></div>
     </div>}
     {error && <p role="alert" className="text-xs text-red-400">{error}</p>}
-    {!file && !recording && !requesting && !busy && children}
+    {!file && !recording && !requesting && !busy && <div className="media-componer"><button type="button" aria-label="Adjuntar archivo" title="Adjuntar archivo" aria-expanded={menu} aria-controls="media-opciones" onClick={() => setMenu(v => !v)} className="media-icono-boton"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m8 13 7-7a3 3 0 0 1 4 4L9 20a5 5 0 0 1-7-7L13 2m-8 14a2 2 0 0 0 3 1l10-10" /></svg></button><div className="media-texto">{children}</div><button type="button" onClick={record} aria-label="Grabar mensaje de voz" title="Grabar mensaje de voz" className="media-icono-boton">{icono('audio')}</button></div>}
   </div>;
 }

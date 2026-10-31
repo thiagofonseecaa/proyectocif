@@ -3,6 +3,7 @@ import MarcaSeguridad from '../componentes/MarcaSeguridad';
 
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { VERSION_CONDICIONES } from '../../lib/condiciones';
 
 function evaluarContrasena(password: string) {
   let puntaje = 0;
@@ -26,11 +27,13 @@ export default function LoginPage() {
   const [mensaje, setMensaje] = useState('');
   const [cargando, setCargando] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
+  const [aceptaCondiciones, setAceptaCondiciones] = useState(false);
 
   const fortaleza = password ? evaluarContrasena(password) : null;
 
   const handleSubmit = async () => {
     if (cargando) return;
+    if (!aceptaCondiciones) { setMensaje('Para continuar, aceptá los términos de uso y leé la información de privacidad.'); return; }
     if (!email.trim() || !password) {
       setMensaje('Ingresá tu correo y contraseña.');
       return;
@@ -43,7 +46,7 @@ export default function LoginPage() {
     setMensaje('');
     try {
     if (esRegistro) {
-      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { condiciones_version: VERSION_CONDICIONES, condiciones_aceptadas_en: new Date().toISOString() } } });
       if (error) setMensaje('Error: ' + error.message);
       else setMensaje(data.session ? 'Cuenta creada. Ya podés iniciar sesión.' : 'Revisá tu correo y confirmá tu cuenta antes de iniciar sesión. Si no aparece, mirá la carpeta de spam.');
     } else {
@@ -76,14 +79,14 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <label className="text-xs text-gray-500">Email</label>
-        <input value={email} onChange={e => setEmail(e.target.value)}
+        <label htmlFor="login-email" className="text-xs text-gray-500">Correo electrónico</label>
+        <input id="login-email" name="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
           type="email" placeholder="tu@email.com"
           className="w-full mt-1 mb-4 bg-gray-950 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500" />
 
-        <label className="text-xs text-gray-500">Contraseña</label>
+        <label htmlFor="login-password" className="text-xs text-gray-500">Contraseña</label>
         <div className="relative mt-1">
-          <input value={password} onChange={e => setPassword(e.target.value)}
+          <input id="login-password" name="password" autoComplete={esRegistro ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)}
             type={verPassword ? 'text' : 'password'}
             placeholder="••••••••"
             className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 pr-10 text-sm focus:outline-none focus:border-blue-500" />
@@ -125,13 +128,14 @@ export default function LoginPage() {
 
         {!esRegistro && <div className="my-4 text-right"><a href="/recuperar-contrasena" className="text-sm text-blue-300 hover:underline">Olvidé mi contraseña</a></div>}
 
-        <button onClick={handleSubmit} disabled={cargando}
+        <div className="aceptacion-condiciones"><label><input type="checkbox" checked={aceptaCondiciones} onChange={e => setAceptaCondiciones(e.target.checked)} disabled={cargando} /><span>Acepto los <a href="/terminos" target="_blank" rel="noopener noreferrer">Términos de uso</a> y he leído la <a href="/privacidad" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label></div>
+        <button onClick={handleSubmit} disabled={cargando || !aceptaCondiciones}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg text-sm disabled:opacity-50">
           {cargando ? 'Cargando...' : esRegistro ? 'Crear cuenta' : 'Ingresar'}
         </button>
 
         {mensaje && <p className="mt-4 text-sm text-center text-yellow-400">{mensaje}</p>}
-        <p className="mt-6 text-center text-xs text-slate-400"><a href="/privacidad" className="hover:text-blue-300 hover:underline">Privacidad y uso de datos</a></p>
+        <p className="mt-6 text-center text-xs text-slate-400"><a href="/terminos" className="hover:text-blue-300 hover:underline">Términos</a><span aria-hidden="true"> · </span><a href="/privacidad" className="hover:text-blue-300 hover:underline">Privacidad y uso de datos</a></p>
       </div>
     </main>
   );

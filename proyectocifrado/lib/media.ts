@@ -1,12 +1,14 @@
 export const MEDIA_BUCKET = 'chat-media';
 export const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
 const PREFIX = 'CHAT_MEDIA_V1:';
-const types: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', webm: 'video/webm', mp4: 'video/mp4' };
+const types: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', webm: 'video/webm', mp4: 'video/mp4', pdf: 'application/pdf', txt: 'text/plain', csv: 'text/csv', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' };
+export const DOCUMENT_ACCEPT = '.pdf,.txt,.csv,.docx,.xlsx,.pptx';
 const allowed = new Set([...Object.values(types), 'audio/webm', 'audio/x-wav']);
 export type MediaInfo = { version: 1; path: string; name: string; mime: string; size: number };
 export function validarArchivo(file: File): string {
-  const mime = file.type.split(';')[0].toLowerCase() || types[file.name.split('.').pop()?.toLowerCase() || ''];
-  if (!allowed.has(mime)) throw new Error('Usá imágenes JPG, PNG o WebP; audio MP3, M4A, WAV, OGG o WebM; o video MP4 o WebM.');
+  const declared = file.type.split(';')[0].toLowerCase();
+  const mime = (!declared || declared === 'application/octet-stream') ? types[file.name.split('.').pop()?.toLowerCase() || ''] : declared;
+  if (!allowed.has(mime)) throw new Error('Formato no admitido. Usá imágenes, audio o video compatibles; o documentos PDF, TXT, CSV, DOCX, XLSX y PPTX.');
   if (!file.size || file.size > MAX_MEDIA_BYTES) throw new Error('El archivo debe pesar entre 1 byte y 20 MB.');
   return mime;
 }
