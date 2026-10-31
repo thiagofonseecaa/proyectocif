@@ -15,7 +15,7 @@ export function textoResumen(resumen: Resumen | undefined, mensaje?: Mensaje): s
   if (!resumen) return '';
   if (mensaje && mensaje.id === resumen.ultimo_id && mensaje.integro !== false && typeof mensaje.texto === 'string') {
     const info = leerArchivo(mensaje.texto, mensaje.archivo_path);
-    if (info) return info.mime.startsWith('image/') ? 'Imagen' : info.mime.startsWith('audio/') ? 'Audio' : 'Video';
+    if (info) return info.mime.startsWith('image/') ? 'Imagen' : info.mime.startsWith('audio/') ? 'Audio' : info.mime.startsWith('video/') ? 'Video' : 'Documento';
     if (mensaje.archivo_path) return 'Archivo cifrado';
     return mensaje.texto.replace(/\s+/g, ' ').slice(0, 90) || 'Mensaje';
   }

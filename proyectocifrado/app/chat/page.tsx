@@ -16,7 +16,7 @@ import InformacionGrupo from './InformacionGrupo';
 import { useResumenConversaciones } from './useResumenConversaciones';
 import { useDuracionPrivada } from './DuracionPrivada';
 import { PLAZOS, usePlazoGrupo, nombrePlazo, vencido } from './PlazoGrupo';
-import { MEDIA_BUCKET, cifrarArchivo, describirArchivo, validarArchivo } from '../../lib/media';
+import { MEDIA_BUCKET, cifrarArchivo, describirArchivo, validarArchivo, leerArchivo } from '../../lib/media';
 
 const mensajeSchema = z.string().min(1, 'El mensaje no puede estar vacio').max(2000, 'El mensaje es demasiado largo');
 const claveSchema = z.string().min(3, 'La clave debe tener al menos 3 caracteres');
@@ -1159,7 +1159,7 @@ export default function ChatPage() {
                       {esGrupo && msg.emisor_id !== usuario.id && (
                         <p className="text-xs text-gray-500 mb-0.5">{msg.emisor?.username || 'Usuario'}</p>
                       )}
-                      <div className={`chat-burbuja max-w-md rounded-xl p-3 ${msg.emisor_id === usuario.id ? 'bg-blue-600 rounded-tr-none' : 'bg-gray-800 rounded-tl-none'}`}>
+                      <div className={`chat-burbuja max-w-md rounded-xl p-3 ${msg.integro !== false && leerArchivo(msg.texto, msg.archivo_path)?.mime.startsWith('image/') ? 'chat-burbuja-imagen' : ''} ${msg.emisor_id === usuario.id ? 'bg-blue-600 rounded-tr-none' : 'bg-gray-800 rounded-tl-none'}`}>
                         {msg.integro === false ? <p className="rounded-lg border border-red-300/30 bg-red-950/60 p-3 text-sm text-red-100">No se pudo abrir este mensaje. Las claves son incorrectas o el contenido fue alterado.</p> : <MensajeMedia texto={msg.texto} path={msg.archivo_path} vig={claveVig} aes={claveAes} expires={msg.destruir_en} />}
                       </div>
                       <div className="mt-1 flex items-center gap-2 flex-wrap">

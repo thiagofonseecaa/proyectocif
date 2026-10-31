@@ -97,3 +97,41 @@
  .chat-adaptable .chat-claves-ayuda > summary, .chat-adaptable .chat-mostrar-claves { min-height: 2.75rem; }
 }
 @media (prefers-reduced-motion: reduce) { .chat-adaptable * { transition: none !important; } }
+
+/* Adjuntos: controles directos y contenido descifrado dentro de la conversación. */
+.media-componer { display: flex; align-items: flex-end; gap: .55rem; }
+.media-texto { flex: 1; min-width: 0; }
+.media-texto > div { gap: .55rem; }
+.media-icono-boton { display: grid; place-items: center; width: 3rem; min-height: 3.25rem; flex-shrink: 0; border: 1px solid #304865; border-radius: .9rem; color: #a4c4ef; background: #14243a; }
+.media-icono-boton:hover, .media-icono-boton[aria-expanded=true] { background: #23416a; color: white; }
+.media-menu { display: flex; flex-wrap: wrap; gap: .6rem; padding: .8rem; border: 1px solid #304865; border-radius: 1rem; background: #14243a; }
+.media-menu > button { display: inline-flex; align-items: center; gap: .55rem; min-height: 2.75rem; padding: .6rem .85rem; border-radius: .75rem; background: #1e3657; font-size: .8rem; color: #e0ebfd; }
+.media-menu > p { width: 100%; font-size: .7rem; color: #9eb4d2; }
+.media-grabacion { display: flex; align-items: center; flex-wrap: wrap; gap: .85rem; padding: .7rem; font-size: .85rem; border: 1px solid #53677e; border-radius: 1rem; }
+.media-grabacion > span { margin-right: auto; color: #ffb1bd; }
+.media-archivo { min-width: min(15rem, 60vw); max-width: 100%; }
+.media-archivo-cabecera { display: flex; gap: .8rem; align-items: center; margin-bottom: .8rem; }
+.media-archivo-cabecera > div { min-width: 0; }
+.media-archivo-cabecera p { overflow-wrap: anywhere; font-size: .85rem; font-weight: 500; }
+.media-archivo-cabecera span:not(.media-archivo-icono) { display: block; font-size: .7rem; opacity: .75; overflow-wrap: anywhere; }
+.media-archivo-icono { font-size: 1.65rem; flex-shrink: 0; opacity: .8; }
+.media-cargar, .media-descargar { display: inline-flex; align-items: center; min-height: 2.5rem; margin-top: .35rem; font-size: .75rem; text-decoration: underline; text-underline-offset: .2rem; }
+.media-archivo audio { max-width: 100%; width: 17rem; }
+.media-documento-previa { display: flex; gap: .75rem; align-items: center; font-size: .85rem; color: #bed2ed; }
+.media-documento-previa > span { font-size: 2rem; }
+.chat-adaptable .chat-burbuja.chat-burbuja-imagen { padding: 0; background: transparent; border-radius: 1rem; }
+.media-imagen { min-width: min(15rem, 65vw); max-width: 22rem; overflow: hidden; border-radius: 1rem; }
+.media-imagen-abrir { display: block; max-width: 100%; min-height: 0 !important; padding: 0; border: 0; border-radius: 1rem; overflow: hidden; }
+.media-imagen-abrir img { display: block; max-width: 100%; width: auto; max-height: 22rem; object-fit: contain; border-radius: 1rem; }
+.media-imagen-espera { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; min-height: 10rem; background: #1b2d45; color: #a6bfdf; font-size: .8rem; }
+.media-imagen-espera > span { font-size: 2rem; }
+.media-error { padding: .75rem; font-size: .75rem; color: #ffd1d8; background: #452b36; border-radius: .7rem; }
+.media-error button { text-decoration: underline; margin-top: .35rem; }
+@media (max-width: 540px) {
+ .media-componer { gap: .35rem; }
+ .media-icono-boton { width: 2.65rem; min-height: 3rem; border-radius: .8rem; }
+ .media-texto > div { gap: .35rem; }
+ .media-texto input[aria-label=Mensaje] { padding-inline: .7rem; }
+ .chat-adaptable .media-texto button[aria-label="Enviar mensaje"] { min-width: 2.7rem; padding-inline: .65rem; }
+ .media-imagen { max-width: 100%; }
+}

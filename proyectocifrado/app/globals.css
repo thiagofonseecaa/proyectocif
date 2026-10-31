@@ -140,6 +140,37 @@ body { line-height: 1.5; }
 .cuenta-acordeon-cuerpo { padding: 1.5rem; }
 .cuenta-acordeon-cuerpo > .panel-cuenta { margin: 0; padding: 0; border: 0; box-shadow: none; border-radius: 0; }
 .cuenta-ayuda { padding-top: 1rem; border-top: 1px solid var(--ec-linea); font-size: .82rem; color: #b4c9e6; }
+.aceptacion-condiciones { margin: 1.25rem 0; padding: .85rem; background: #0e1929; border: 1px solid #2e405b; border-radius: .8rem; }
+.aceptacion-condiciones > label { display: flex; align-items: flex-start; gap: .7rem; font-size: .75rem; line-height: 1.8; color: #b6c7df; }
+.aceptacion-condiciones input { margin-top: .25rem; }
+.aceptacion-condiciones a { color: #9cc2ff; text-decoration: underline; text-underline-offset: .2rem; }
+.informacion-shell > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; max-width: 72rem; margin: auto; padding: 1.4rem 1.5rem; border-bottom: 1px solid #293b55; }
+.informacion-shell > header > a:last-child { color: #a8c9f6; font-size: .8rem; }
+.informacion-shell article { max-width: 55rem; margin: auto; padding: 3rem 1.5rem; }
+.informacion-hero > span { color: #85b4ff; font-size: .65rem; font-weight: 600; letter-spacing: .17em; }
+.informacion-hero h1 { margin-top: .8rem; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; font-weight: 600; letter-spacing: -.045em; }
+.informacion-hero > p { margin-top: 1.25rem; max-width: 65ch; font-size: .95rem; color: #b6c8e2; line-height: 1.85; }
+.informacion-hero small { display: block; margin-top: 1rem; font-size: .72rem; color: #8ea5c4; }
+.informacion-resumen { margin-top: 2rem; border: 1px solid #355079; border-radius: 1.25rem; padding: 1.5rem; background: #142741; }
+.informacion-resumen h2 { font-size: 1rem; font-weight: 600; margin-bottom: .8rem; }
+.informacion-resumen ul { padding-left: 1.1rem; list-style: disc; color: #bed0e8; font-size: .85rem; line-height: 1.9; }
+.informacion-resumen li + li { margin-top: .35rem; }
+.informacion-indice { display: flex; gap: .6rem; flex-wrap: wrap; margin: 1.6rem 0 2rem; }
+.informacion-indice a { padding: .5rem .75rem; border: 1px solid #2e425f; border-radius: 2rem; font-size: .72rem; color: #adc7ea; }
+.informacion-indice a:hover { background: #1b3558; }
+.informacion-secciones { border: 1px solid #2c405d; border-radius: 1.25rem; padding: .3rem 1.8rem; background: #111c2e; }
+.informacion-secciones section { padding: 1.7rem 0; scroll-margin-top: 1rem; }
+.informacion-secciones section + section { border-top: 1px solid #283b55; }
+.informacion-secciones h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: .7rem; letter-spacing: -.02em; }
+.informacion-secciones p { font-size: .88rem; line-height: 1.95; color: #b6c7df; }
+.informacion-secciones p + p { margin-top: .7rem; }
+.informacion-shell footer { margin-top: 2rem; color: #8fa6c5; font-size: .72rem; line-height: 1.8; }
+.informacion-shell footer nav { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: .75rem; color: #b1cef5; }
+.informacion-contacto { margin-top: 1.5rem; padding: 1.3rem 1.5rem; border: 1px solid #34527c; background: #142741; border-radius: 1.1rem; font-size: .85rem; line-height: 1.8; color: #b6cbea; }
+.informacion-contacto h2 { color: #e7f0ff; font-weight: 600; margin-bottom: .4rem; }
+.informacion-contacto a { color: #a8caff; text-decoration: underline; overflow-wrap: anywhere; }
+.informacion-contacto small { display: block; margin-top: .5rem; color: #91aaca; }
+@media (max-width: 540px) { .informacion-shell article { padding: 2rem 1rem; } .informacion-shell > header { padding-inline: 1rem; } .informacion-resumen { padding: 1.1rem; } .informacion-secciones { padding-inline: 1.2rem; } }
 .chat-bienvenida-icono { width: 4.25rem; height: 4.25rem; margin: 0 auto 1.5rem; display: grid; place-items: center; border: 1px solid #314a70; border-radius: 1.25rem; color: #9bbfff; background: #13243c; }
 @media (max-width: 540px) {
  .auth-shell { padding: 1rem; }
