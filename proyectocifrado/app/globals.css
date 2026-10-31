@@ -138,6 +138,24 @@ body { line-height: 1.5; }
 .cuenta-acordeon[open] > summary { border-bottom: 1px solid var(--ec-linea); }
 .cuenta-acordeon[open] > summary .cuenta-chevron { transform: rotate(180deg); }
 .cuenta-acordeon-cuerpo { padding: 1.5rem; }
+.cuenta-acordeon > summary .cuenta-estado { display: inline-flex; width: fit-content; margin-top: .65rem; border: 1px solid #40516a; border-radius: 2rem; padding: .2rem .6rem; color: #b9cbe3; font-size: .7rem; }
+.cuenta-acordeon > summary .cuenta-estado[data-activo=true] { background: #12392f; border-color: #286456; color: #91e1c5; }
+.cuenta-enlaces { display: grid; gap: .8rem; padding-top: .6rem; }
+.cuenta-enlace { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; text-decoration: none; border: 1px solid #2c405b; border-radius: 1.1rem; }
+.cuenta-enlace > span:nth-child(2) { flex: 1; min-width: 0; }
+.cuenta-enlace strong { display: block; font-size: .95rem; font-weight: 600; }
+.cuenta-enlace > span > span { display: block; margin-top: .3rem; color: #a5b7d0; font-size: .82rem; line-height: 1.6; }
+.cuenta-enlace > span:last-child { color: #9cbce8; }
+.cuenta-enlace:hover { background: #17263d; }
+.cuenta-enlace:focus-visible, .ayuda-pregunta > summary:focus-visible { outline: 2px solid #8cb5ff; outline-offset: 3px; border-radius: 1rem; }
+.ayuda-temas > section { margin-bottom: 2rem; scroll-margin-top: 1rem; }
+.ayuda-temas h2 { margin-bottom: 1rem; font-size: 1.2rem; font-weight: 600; }
+.ayuda-pregunta { margin-top: .65rem; border: 1px solid #2c405b; border-radius: 1rem; background: #111c2e; }
+.ayuda-pregunta > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.3rem; cursor: pointer; list-style: none; font-weight: 500; font-size: .9rem; }
+.ayuda-pregunta > summary::-webkit-details-marker { display: none; }
+.ayuda-pregunta > summary > span { flex-shrink: 0; color: #9cbce8; }
+.ayuda-pregunta[open] > summary > span { transform: rotate(180deg); }
+.ayuda-pregunta > p { padding: 0 1.3rem 1.3rem; font-size: .9rem; line-height: 1.9; color: #b6c7df; }
 .cuenta-acordeon-cuerpo > .panel-cuenta { margin: 0; padding: 0; border: 0; box-shadow: none; border-radius: 0; }
 .cuenta-ayuda { padding-top: 1rem; border-top: 1px solid var(--ec-linea); font-size: .82rem; color: #b4c9e6; }
 .aceptacion-condiciones { margin: 1.25rem 0; padding: .85rem; background: #0e1929; border: 1px solid #2e405b; border-radius: .8rem; }
@@ -175,6 +193,8 @@ body { line-height: 1.5; }
 @media (max-width: 540px) {
  .auth-shell { padding: 1rem; }
  .auth-shell input:not([type="checkbox"]), .auth-shell select { font-size: 16px; }
+ .cuenta-shell input:not([type="checkbox"]), .cuenta-shell select { font-size: 16px; }
+ .cuenta-enlace { padding: 1rem; gap: .75rem; }
  .auth-shell > div, .auth-shell > section { padding: 1.5rem; border-radius: 1.25rem; }
  .marca-compacta { width: 8.5rem; }
  .chat-cabecera { padding-left: .85rem; padding-right: .85rem; gap: .5rem; }

@@ -8,7 +8,11 @@ import MarcaSeguridad from './MarcaSeguridad';
 type Factor = { id: string; friendly_name?: string };
 export async function comprobarAccesoMfa() {
   const user = await supabase.auth.getUser();
-  if (user.error || !user.data.user) throw new Error('Iniciá sesión nuevamente.');
+  if (user.error || !user.data.user) {
+    const error = new Error('Iniciá sesión nuevamente.');
+    if (!user.error || user.error.status === 401 || user.error.name === 'AuthSessionMissingError') error.name = 'SesionRequerida';
+    throw error;
+  }
   const factors = await supabase.auth.mfa.listFactors();
   if (factors.error) throw factors.error;
   const level = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -38,7 +42,8 @@ export default function ProteccionMfa({ children }: { children: ReactNode }) {
         setFactor(prev => result.factores.some(f => f.id === prev) ? prev : result.factores[0]?.id || '');
         setEstado(result.requerido ? 'codigo' : 'permitido');
         setError('');
-      } catch {
+      } catch (failure) {
+        if (activo && version === revision.current && failure instanceof Error && failure.name === 'SesionRequerida') { window.location.replace('/login'); return; }
         if (activo && version === revision.current) { setEstado('error'); setError('No pudimos comprobar tu sesión. Revisá la conexión y reintentá.'); }
       }
     }
