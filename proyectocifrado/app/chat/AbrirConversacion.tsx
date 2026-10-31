@@ -3,6 +3,7 @@ import { AvatarChat, IconoChat } from './ElementosChat';
 
 type Props = {
   nombre: string; grupo: boolean; vig: string; aes: string; mostrar: boolean; busy: boolean;
+  error?: string;
   onVig: (value: string) => void; onAes: (value: string) => void; onMostrar: (value: boolean) => void;
   onAbrir: () => void; onGrupo: () => void;
 };
@@ -24,7 +25,8 @@ export default function AbrirConversacion(p: Props) {
       </div>
       <label className="chat-mostrar-claves"><input type="checkbox" checked={p.mostrar} onChange={e => p.onMostrar(e.target.checked)} />Mostrar claves</label>
       {debiles && <p role="status" className="chat-claves-aviso">Para una conversación nueva, usen dos frases largas y distintas. Si el chat ya existe, ingresá las claves originales.</p>}
-      <button type="submit" disabled={p.busy} className="chat-abrir-boton">{p.busy ? 'Abriendo conversación…' : 'Abrir conversación'}{!p.busy && <span aria-hidden="true">→</span>}</button>
+      {p.error && <p role="alert" className="chat-claves-aviso">{p.error}</p>}
+      <button type="submit" disabled={p.busy || !p.vig || !p.aes} className="chat-abrir-boton">{p.busy ? 'Abriendo conversación…' : 'Abrir conversación'}{!p.busy && <span aria-hidden="true">→</span>}</button>
       <details className="chat-claves-ayuda"><summary>¿Cómo funcionan las claves?</summary><div>
         <p>{p.grupo ? 'Todos los integrantes deben usar las mismas dos claves.' : 'Vos y tu contacto deben usar las mismas dos claves.'} Acuérdenlas en persona o por otro medio de confianza.</p>
         <p>Para un chat nuevo, elijan dos frases distintas de al menos 12 caracteres. Eviten nombres, fechas y frases fáciles de adivinar.</p>

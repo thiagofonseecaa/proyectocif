@@ -79,7 +79,7 @@ export function AdjuntarMedia({ onSend, children }: { onSend: (file: File) => Pr
   const record = async () => {
     if (requesting || recording || sending.current) return;
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setError('Este navegador no permite grabar aquí. Usá localhost o HTTPS, o adjuntá un archivo.'); return;
+      setError('Este navegador no permite grabar audio. Podés adjuntar un audio guardado desde el clip.'); return;
     }
     const current = ++request.current; setRequesting(true); setError(''); cancelled.current = false;
     try {

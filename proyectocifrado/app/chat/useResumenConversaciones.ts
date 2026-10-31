@@ -62,7 +62,7 @@ export function useResumenConversaciones(userId: string | undefined, activa: Act
         const result = await supabase.rpc('p07_resumen_conversaciones');
         if (!active || actor.current !== userId) return;
         if (result.error) throw new Error(['PGRST202','42883'].includes(result.error.code)
-          ? 'Para activar los contadores falta ejecutar el paso 7 en Supabase.'
+          ? 'Los contadores no están disponibles. Podés abrir tus conversaciones; si persiste, contactá a soporte.'
           : 'No se pudieron actualizar los contadores. Reintentaremos en unos segundos.');
         const current = await supabase.auth.getUser();
         if (!active || actor.current !== userId) return;

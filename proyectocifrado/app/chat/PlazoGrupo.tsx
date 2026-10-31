@@ -27,7 +27,7 @@ export function usePlazoGrupo(grupoId?: string) {
         const result=await supabase.from('grupos').select('retencion_segundos').eq('id',grupoId).maybeSingle();
         if (!active) return;
         if (result.error || !result.data) throw new Error(result.error?.code==='42703' || result.error?.code==='PGRST204'
-          ? 'Falta activar el paso 8 en Supabase para enviar mensajes de grupo.' : 'No se pudo consultar el plazo del grupo. Volvé a intentar.');
+          ? 'La configuración del grupo no está disponible. Reintentá o contactá a soporte.' : 'No se pudo consultar el plazo del grupo. Volvé a intentar.');
         const value=result.data.retencion_segundos as number | null;
         setMaximo(value); setCargado(grupoId); setError('');
         setPlazo(prev=>prev==='grupo' || plazosPermitidos(value).some(p=>String(p.valor)===prev) ? prev : 'grupo');

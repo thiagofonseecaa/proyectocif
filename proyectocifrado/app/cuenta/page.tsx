@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
+import { CORREO_SOPORTE } from '../../lib/condiciones';
 
 function fecha(value?: string) {
   return value ? new Date(value).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' }) : 'Sin información';
@@ -164,8 +165,8 @@ export default function MiCuenta() {
           <div className="cuenta-acordeon-cuerpo"><HistorialAccesos key={user.id} userId={user.id} /></div>
         </details>
         <details className="cuenta-acordeon panel-cuenta">
-          <summary><IconoCuenta tipo="campana" /><span><strong>Notificaciones</strong><span>Dónde consultar tus mensajes y solicitudes.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
-          <div className="cuenta-acordeon-cuerpo text-sm text-slate-300 space-y-3"><p>Consultá tus mensajes en Chats y las invitaciones en Solicitudes.</p><p>Por ahora, Entre Claves no envía notificaciones al celular ni al escritorio cuando la web está cerrada.</p><Link href="/chat" className="inline-block text-blue-300 hover:underline">Ir a mis conversaciones →</Link></div>
+          <summary><IconoCuenta tipo="ayuda" /><span><strong>Ayuda y contacto</strong><span>Consultá cómo usar el servicio o pedí asistencia.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>
+          <div className="cuenta-acordeon-cuerpo text-sm text-slate-300 space-y-3"><p>Consultá tus mensajes en Chats y las invitaciones en Solicitudes. La web no envía notificaciones al celular cuando está cerrada.</p><p>Para leer una conversación, necesitás las dos claves acordadas con sus integrantes. Recuperar la contraseña de acceso no recupera esas claves.</p><p>¿Necesitás ayuda? Escribí a <a href={'mailto:' + CORREO_SOPORTE} className="text-blue-300 underline">{CORREO_SOPORTE}</a>. No envíes contraseñas ni códigos del autenticador.</p><Link href="/chat" className="inline-block text-blue-300 hover:underline">Ir a mis conversaciones →</Link></div>
         </details>
         <details className="cuenta-acordeon panel-cuenta">
           <summary><IconoCuenta tipo="privacidad" /><span><strong>Privacidad y uso de datos</strong><span>Conocé qué información utiliza Entre Claves.</span></span><span className="cuenta-chevron" aria-hidden="true">⌄</span></summary>

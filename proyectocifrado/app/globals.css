@@ -174,6 +174,7 @@ body { line-height: 1.5; }
 .chat-bienvenida-icono { width: 4.25rem; height: 4.25rem; margin: 0 auto 1.5rem; display: grid; place-items: center; border: 1px solid #314a70; border-radius: 1.25rem; color: #9bbfff; background: #13243c; }
 @media (max-width: 540px) {
  .auth-shell { padding: 1rem; }
+ .auth-shell input:not([type="checkbox"]), .auth-shell select { font-size: 16px; }
  .auth-shell > div, .auth-shell > section { padding: 1.5rem; border-radius: 1.25rem; }
  .marca-compacta { width: 8.5rem; }
  .chat-cabecera { padding-left: .85rem; padding-right: .85rem; gap: .5rem; }

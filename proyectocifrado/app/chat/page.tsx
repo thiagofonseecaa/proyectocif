@@ -22,8 +22,8 @@ const mensajeSchema = z.string().min(1, 'El mensaje no puede estar vacio').max(2
 const claveSchema = z.string().min(3, 'La clave debe tener al menos 3 caracteres');
 
 function CheckStatus({ enviado, leido }: { enviado: boolean, leido: boolean }) {
-  if (leido) return <span className="text-blue-400 text-xs">✓✓</span>;
-  if (enviado) return <span className="text-gray-500 text-xs">✓✓</span>;
+  if (leido) return <span aria-label="Leído" className="text-blue-400 text-xs">✓✓</span>;
+  if (enviado) return <span aria-label="Enviado" className="text-gray-500 text-xs">✓</span>;
   return <span className="text-gray-600 text-xs">✓</span>;
 }
 
@@ -59,6 +59,7 @@ type Vista = 'chats' | 'buscar' | 'solicitudes' | 'grupos';
 
 export default function ChatPage() {
   const [usuario, setUsuario] = useState<any>(null);
+  const [errorInicio, setErrorInicio] = useState(false);
   const sesionCerradaRef = useRef(false);
   const identidadSesionRef = useRef<string | null>(null);
   const [sesionBloqueada, setSesionBloqueada] = useState(false);
@@ -75,6 +76,9 @@ export default function ChatPage() {
   const respuestaInvitacionRef = useRef(false);
   const [contactoSeleccionado, setContactoSeleccionado] = useState<any>(null);
   const [mensajes, setMensajes] = useState<any[]>([]);
+  const historialRef = useRef<any[]>([]);
+  useEffect(() => { historialRef.current = mensajes; }, [mensajes]);
+  const [errorSincronizacion, setErrorSincronizacion] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [enviandoTexto, setEnviandoTexto] = useState(false);
   const envioTextoRef = useRef(false);
@@ -88,6 +92,10 @@ export default function ChatPage() {
   const [busqueda, setBusqueda] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState<any[]>([]);
   const [buscando, setBuscando] = useState(false);
+  const [avisoContactos, setAvisoContactos] = useState('');
+  const [errorContactos, setErrorContactos] = useState('');
+  const [operandoContacto, setOperandoContacto] = useState(false);
+  const operacionContactoRef = useRef(false), buscandoRef = useRef(false);
   const [miUsername, setMiUsername] = useState('');
   const [busquedaChats, setBusquedaChats] = useState('');
   const [busquedaGrupos, setBusquedaGrupos] = useState('');
@@ -162,6 +170,44 @@ export default function ChatPage() {
       : contactoSeleccionado && conversacionId ? { tipo: 'privado' as const, id: contactoSeleccionado.id, conversacionId } : null
     : null;
   const resumen = useResumenConversaciones(usuario?.id, activaResumen, mensajes);
+  // Recuperar mensajes perdidos al suspender el celular o reconectar el canal.
+  useEffect(() => {
+    if (!clavesConfiguradas || !usuario || (!grupoSeleccionado && !conversacionId)) return;
+    let activo = true, cargando = false, cursor = '';
+    const operacion = operacionChatRef.current;
+    const grupoId = grupoSeleccionado?.id;
+    async function sincronizar() {
+      if (!activo || cargando || document.visibilityState === 'hidden') return;
+      cargando = true;
+      try {
+        const campo = grupoId ? 'grupo_id' : 'conversacion_id';
+        const base = grupoId ? supabase.from('mensajes_grupo').select('*, emisor:usuarios!mensajes_grupo_emisor_id_fkey(username)') : supabase.from('mensajes').select('*');
+        let consulta = base.eq(campo, grupoId || conversacionId).order('created_at', { ascending: true });
+        if (cursor) consulta = consulta.gte('created_at', cursor);
+        const { data, error } = await consulta;
+        if (!activo || operacion !== operacionChatRef.current) return;
+        if (error) throw error;
+        const existentes = new Set(historialRef.current.map(m => m.id));
+        const nuevos = await Promise.all((data || []).filter(m => !existentes.has(m.id) && !vencido(m.destruir_en)).map(async m => {
+          try { return { ...m, texto: await descifrar(m.contenido_cifrado, claveVig, claveAes), integro: esCifradoAutenticado(m.contenido_cifrado) ? true : null }; }
+          catch { return { ...m, texto: '', integro: false }; }
+        }));
+        if (!activo || operacion !== operacionChatRef.current) return;
+        if (data?.length) cursor = data[data.length - 1].created_at;
+        if (nuevos.length) setMensajes(prev => {
+          const ids = new Set(prev.map(m => m.id));
+          return [...prev, ...nuevos.filter(m => !ids.has(m.id))].sort((a, b) => a.created_at.localeCompare(b.created_at));
+        });
+        setErrorSincronizacion('');
+      } catch { if (activo && operacion === operacionChatRef.current) setErrorSincronizacion('No pudimos actualizar los mensajes. Reintentaremos al recuperar la conexión.'); }
+      finally { cargando = false; }
+    }
+    void sincronizar();
+    const timer = setInterval(() => void sincronizar(), 10000);
+    window.addEventListener('focus', sincronizar);
+    document.addEventListener('visibilitychange', sincronizar);
+    return () => { activo = false; clearInterval(timer); window.removeEventListener('focus', sincronizar); document.removeEventListener('visibilitychange', sincronizar); };
+  }, [clavesConfiguradas, usuario?.id, grupoSeleccionado?.id, conversacionId, claveVig, claveAes]);
   const ultimoMensajeId = mensajes[mensajes.length - 1]?.id;
   useEffect(() => { resumen.refresh(); }, [ultimoMensajeId, resumen.refresh]);
   const filaResumen = (tipo: 'privado' | 'grupo', id: string) => {
@@ -191,7 +237,7 @@ export default function ChatPage() {
     invalidarChat();
     setContactoSeleccionado(null); setGrupoSeleccionado(null); setConversacionId(null);
     setMensajes([]); setClaveVig(''); setClaveAes(''); setClavesConfiguradas(false);
-    setMostrarClaves(false); setMostrarMiembros(false); setOtroEscribiendo(null);
+    setMostrarClaves(false); setMostrarMiembros(false); setOtroEscribiendo(null); setErrorMensaje(''); setErrorSincronizacion('');
   };
 
   const mensajesRef = useRef<HTMLDivElement>(null);
@@ -233,7 +279,7 @@ export default function ChatPage() {
         supabase.from('usuarios').select('username').eq('id', data.user.id).single()
           .then(({ data: u }) => { if (u) setMiUsername(u.username); });
       }
-    });
+    }).catch(() => { if (montado && !sesionCerradaRef.current) setErrorInicio(true); });
     return () => { montado = false; escucha.subscription.unsubscribe(); };
   }, []);
 
@@ -301,7 +347,7 @@ export default function ChatPage() {
       .or(`emisor_id.eq.${miId},receptor_id.eq.${miId}`);
 
     if (data) {
-      const lista = data.map(s => s.emisor_id === miId ? s.receptor : s.emisor);
+      const lista = [...new Map(data.map(s => s.emisor_id === miId ? s.receptor : s.emisor).filter(Boolean).map((c: any) => [c.id, c])).values()];
       setContactos(lista);
     }
   };
@@ -320,38 +366,46 @@ export default function ChatPage() {
   };
 
   const buscarUsuarios = async () => {
-    if (!busqueda || !usuario) return;
-    setBuscando(true);
-    const { data } = await supabase
-      .from('usuarios')
-      .select('*')
-      .ilike('email', `%${busqueda}%`)
-      .neq('id', usuario.id)
-      .limit(5);
-    if (data) setResultadosBusqueda(data);
-    setBuscando(false);
+    if (!usuario || buscandoRef.current) return;
+    const correo = busqueda.trim().toLowerCase();
+    setErrorContactos(''); setAvisoContactos(''); setResultadosBusqueda([]);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { setErrorContactos('Ingresá el correo completo de tu contacto.'); return; }
+    buscandoRef.current = true; setBuscando(true);
+    try {
+      const { data, error } = await supabase.from('usuarios').select('id, username, email')
+        .eq('email', correo).neq('id', usuario.id).limit(1);
+      if (error) throw error;
+      if (sesionCerradaRef.current) return;
+      setResultadosBusqueda(data || []);
+      if (!data?.length) setAvisoContactos('No encontramos ese correo. Comprobá que la otra persona ya se haya registrado.');
+    } catch { setErrorContactos('No se pudo buscar el contacto. Revisá tu conexión y reintentá.'); }
+    finally { buscandoRef.current = false; setBuscando(false); }
   };
 
   const enviarSolicitud = async (receptorId: string) => {
-    if (!usuario) return;
-    const { error } = await supabase
-      .from('solicitudes_contacto')
-      .insert({ emisor_id: usuario.id, receptor_id: receptorId });
-    if (error) alert('Error: ' + error.message);
-    else alert('Solicitud enviada.');
-    setResultadosBusqueda([]);
-    setBusqueda('');
+    if (!usuario || operacionContactoRef.current) return;
+    if (contactos.some(c => c.id === receptorId)) { setAvisoContactos('Esta persona ya está en tus contactos. Buscala en Chats.'); return; }
+    operacionContactoRef.current = true; setOperandoContacto(true); setErrorContactos(''); setAvisoContactos('');
+    try {
+      const { error } = await supabase.from('solicitudes_contacto').insert({ emisor_id: usuario.id, receptor_id: receptorId });
+      if (error) { setErrorContactos(error.code === '23505' ? 'Ya existe una solicitud con este contacto. Revisá Solicitudes o esperá su respuesta.' : 'No se pudo enviar la solicitud. Revisá tu conexión y reintentá.'); return; }
+      setAvisoContactos('Solicitud enviada. El contacto debe aceptarla en Solicitudes.');
+      setResultadosBusqueda([]); setBusqueda('');
+    } catch { setErrorContactos('No se pudo enviar la solicitud. Volvé a intentar.'); }
+    finally { operacionContactoRef.current = false; setOperandoContacto(false); }
   };
 
   const responderSolicitud = async (solicitudId: string, accion: 'aceptado' | 'rechazado') => {
-    await supabase
-      .from('solicitudes_contacto')
-      .update({ estado: accion })
-      .eq('id', solicitudId);
-    if (usuario) {
-      cargarSolicitudes(usuario.id);
-      cargarContactos(usuario.id);
-    }
+    if (!usuario || operacionContactoRef.current) return;
+    operacionContactoRef.current = true; setOperandoContacto(true); setErrorContactos(''); setAvisoContactos('');
+    try {
+      const { data, error } = await supabase.from('solicitudes_contacto').update({ estado: accion })
+        .eq('id', solicitudId).eq('receptor_id', usuario.id).eq('estado', 'pendiente').select('id');
+      if (error || !data?.length) throw new Error('No se pudo guardar');
+      await Promise.all([cargarSolicitudes(usuario.id), cargarContactos(usuario.id)]);
+      setAvisoContactos(accion === 'aceptado' ? 'Contacto agregado. Ya pueden abrir su conversación en Chats.' : 'Solicitud rechazada.');
+    } catch { setErrorContactos('No se pudo responder la solicitud. Actualizá la página y reintentá.'); }
+    finally { operacionContactoRef.current = false; setOperandoContacto(false); }
   };
 
   const seleccionarContacto = (contacto: any) => {
@@ -365,7 +419,7 @@ export default function ChatPage() {
     setClaveAes('');
     setErrorMensaje('');
     setOtroEscribiendo(null);
-    setMostrarMiembros(false);
+    setMostrarMiembros(false); setMostrarClaves(false); setErrorSincronizacion('');
     setVista('chats');
   };
 
@@ -459,6 +513,7 @@ export default function ChatPage() {
       if (actualizado) setGrupoSeleccionado((prev: any) => prev?.id === actual && prev.nombre !== actualizado.nombre ? { ...prev, nombre: actualizado.nombre } : prev);
       if (actual && !lista.some((g: any) => g.id === actual)) {
         invalidarChat(); setGrupoSeleccionado(null); setClavesConfiguradas(false); setMensajes([]);
+        setClaveVig(''); setClaveAes(''); setMostrarClaves(false); setMostrarMiembros(false);
         setAvisoGrupos('Ya no pertenecés al grupo seleccionado.');
       }
     }
@@ -493,6 +548,7 @@ export default function ChatPage() {
     if (error) { setErrorGrupos(error.message); return; }
     if (grupoSeleccionado?.id === grupo.id) {
       invalidarChat(); setGrupoSeleccionado(null); setClavesConfiguradas(false); setMensajes([]);
+      setClaveVig(''); setClaveAes(''); setMostrarClaves(false); setMostrarMiembros(false);
     }
     await cargarGrupos(usuario.id);
   };
@@ -511,13 +567,12 @@ export default function ChatPage() {
     setClaveAes('');
     setErrorMensaje('');
     setOtroEscribiendo(null);
-    setMostrarMiembros(false);
+    setMostrarMiembros(false); setMostrarClaves(false); setErrorSincronizacion('');
     setVista('grupos');
   };
 
   const cambiarClaves = () => {
     invalidarChat();
-    setMensaje(mensaje);
     setClavesConfiguradas(false);
     setMensajes([]);
     setClaveVig(''); setClaveAes(''); setMostrarClaves(false);
@@ -528,13 +583,13 @@ export default function ChatPage() {
     if (configurandoRef.current !== null || clavesConfiguradas) return;
     const vigResult = claveSchema.safeParse(claveVig);
     const aesResult = claveSchema.safeParse(claveAes);
-    if (!vigResult.success) { alert('Clave Vigenere invalida: ' + vigResult.error.issues[0].message); return; }
-    if (!aesResult.success) { alert('Clave AES invalida: ' + aesResult.error.issues[0].message); return; }
+    if (!vigResult.success) { setErrorMensaje('Primera clave: ' + vigResult.error.issues[0].message); return; }
+    if (!aesResult.success) { setErrorMensaje('Segunda clave: ' + aesResult.error.issues[0].message); return; }
     if (!grupoSeleccionado) return;
 
     const operacion = ++operacionChatRef.current;
     configurandoRef.current = operacion;
-    setConfigurando(true);
+    setConfigurando(true); setErrorMensaje('');
     try {
       await cargarMensajesGrupo(grupoSeleccionado.id, claveVig, claveAes, operacion);
       if (operacion !== operacionChatRef.current) return;
@@ -542,7 +597,7 @@ export default function ChatPage() {
       if (operacion !== operacionChatRef.current) return;
       setClavesConfiguradas(true);
     } catch (error: any) {
-      if (operacion === operacionChatRef.current) alert('No se pudo abrir el grupo: ' + error.message);
+      if (operacion === operacionChatRef.current) setErrorMensaje('No se pudo abrir el grupo. Revisá tu conexión y que sigas siendo integrante.');
     } finally {
       if (configurandoRef.current === operacion) {
         configurandoRef.current = null;
@@ -664,17 +719,20 @@ export default function ChatPage() {
       const contenidoCifrado = await cifrar(mensajeLimpio, claveVig, claveAes);
       const hash = await hashCifrado(contenidoCifrado);
       if (operation !== operacionChatRef.current) return;
-      const { error } = await supabase.from('mensajes_grupo').insert({
+      const { data, error } = await supabase.from('mensajes_grupo').insert({
         grupo_id: grupoSeleccionado.id,
         plazo_segundos: plazoGrupo.segundos,
         emisor_id: usuario.id,
         contenido_cifrado: contenidoCifrado,
         hash,
-      });
+      }).select().single();
       if (error) { setErrorMensaje('No se pudo enviar: ' + error.message); return; }
-      if (operation === operacionChatRef.current) setMensaje(prev => prev === mensaje ? '' : prev);
+      if (operation === operacionChatRef.current) {
+        if (data) setMensajes(prev => prev.some(m => m.id === data.id) ? prev : [...prev, { ...data, texto: mensajeLimpio, integro: true }]);
+        setMensaje(prev => prev === mensaje ? '' : prev);
+      }
     } catch (e: any) {
-      alert('Error al cifrar: ' + e.message);
+      if (operation === operacionChatRef.current) setErrorMensaje('No se pudo enviar el mensaje. Revisá tu conexión y volvé a intentar.');
     }
   };
 
@@ -682,13 +740,13 @@ export default function ChatPage() {
     if (configurandoRef.current !== null || clavesConfiguradas) return;
     const vigResult = claveSchema.safeParse(claveVig);
     const aesResult = claveSchema.safeParse(claveAes);
-    if (!vigResult.success) { alert('Clave Vigenere invalida: ' + vigResult.error.issues[0].message); return; }
-    if (!aesResult.success) { alert('Clave AES invalida: ' + aesResult.error.issues[0].message); return; }
+    if (!vigResult.success) { setErrorMensaje('Primera clave: ' + vigResult.error.issues[0].message); return; }
+    if (!aesResult.success) { setErrorMensaje('Segunda clave: ' + aesResult.error.issues[0].message); return; }
     if (!usuario || !contactoSeleccionado) return;
 
     const operacion = ++operacionChatRef.current;
     configurandoRef.current = operacion;
-    setConfigurando(true);
+    setConfigurando(true); setErrorMensaje('');
     try {
     const { data: existente, error: errorBusqueda } = await supabase
       .from('conversaciones')
@@ -719,7 +777,7 @@ export default function ChatPage() {
     setConversacionId(convId);
     setClavesConfiguradas(true);
     } catch (error: any) {
-      if (operacion === operacionChatRef.current) alert('No se pudo abrir el chat: ' + error.message);
+      if (operacion === operacionChatRef.current) setErrorMensaje('No se pudo abrir el chat. Revisá tu conexión y volvé a intentar.');
     } finally {
       if (configurandoRef.current === operacion) {
         configurandoRef.current = null;
@@ -821,17 +879,20 @@ export default function ChatPage() {
       const contenidoCifrado = await cifrar(mensajeLimpio, claveVig, claveAes);
       const hash = await hashCifrado(contenidoCifrado);
       if (operation !== operacionChatRef.current) return;
-      const { error } = await supabase.from('mensajes').insert({
+      const { data, error } = await supabase.from('mensajes').insert({
         conversacion_id: conversacionId,
         emisor_id: usuario.id,
         contenido_cifrado: contenidoCifrado,
         hash,
         leido: false,
-      });
+      }).select().single();
       if (error) { setErrorMensaje('No se pudo enviar: ' + error.message); return; }
-      if (operation === operacionChatRef.current) setMensaje(prev => prev === mensaje ? '' : prev);
+      if (operation === operacionChatRef.current) {
+        if (data) setMensajes(prev => prev.some(m => m.id === data.id) ? prev : [...prev, { ...data, texto: mensajeLimpio, integro: true }]);
+        setMensaje(prev => prev === mensaje ? '' : prev);
+      }
     } catch (e: any) {
-      alert('Error al cifrar: ' + e.message);
+      if (operation === operacionChatRef.current) setErrorMensaje('No se pudo enviar el mensaje. Revisá tu conexión y volvé a intentar.');
     }
   };
 
@@ -870,7 +931,7 @@ export default function ChatPage() {
     </section>
   </main>;
 
-  if (!usuario) return null;
+    if (!usuario) return <main className="min-h-dvh flex items-center justify-center bg-gray-950 text-slate-300"><div className="p-6 text-center">{errorInicio ? <><p role="alert">No pudimos cargar tus conversaciones. Revisá tu conexión.</p><button onClick={() => window.location.reload()} className="mt-4 rounded-xl bg-blue-600 px-5 py-3">Reintentar</button></> : <p role="status">Cargando tus conversaciones…</p>}</div></main>;
 
   return (
     <main ref={marcoChatRef} data-conversacion={!!(contactoSeleccionado || grupoSeleccionado)} className="chat-adaptable h-dvh min-h-0 overflow-hidden bg-gray-950 text-gray-100 flex flex-col">
@@ -915,6 +976,8 @@ export default function ChatPage() {
           {resumen.error && <p role="status" className="p-3 text-xs text-amber-300">{resumen.error}</p>}
           {errorGrupos && <p role="alert" className="p-3 text-xs text-red-400">{errorGrupos}</p>}
           {avisoGrupos && <p role="status" className="p-3 text-xs text-green-400">{avisoGrupos}</p>}
+          {errorContactos && <p role="alert" className="p-3 text-sm text-red-300">{errorContactos}</p>}
+          {avisoContactos && <p role="status" className="p-3 text-sm text-blue-200">{avisoContactos}</p>}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             {vista === 'chats' && (
               <div className="flex flex-col h-full">
@@ -1031,7 +1094,7 @@ export default function ChatPage() {
                     <div key={u.id} className="bg-gray-800 rounded-lg p-3">
                       <p className="text-sm font-medium">{u.username}</p>
                       <p className="text-xs text-gray-500 mb-2">{u.email}</p>
-                      <button onClick={() => enviarSolicitud(u.id)}
+                      <button disabled={operandoContacto} onClick={() => enviarSolicitud(u.id)}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1 rounded text-xs">
                         Agregar contacto
                       </button>
@@ -1061,14 +1124,14 @@ export default function ChatPage() {
                 ))}
                 {solicitudesPendientes.map(s => (
                   <div key={s.id} className="bg-gray-800 rounded-lg p-3">
-                    <p className="text-sm font-medium">{s.emisor.username}</p>
-                    <p className="text-xs text-gray-500 mb-2">{s.emisor.email}</p>
+                    <p className="text-sm font-medium">{s.emisor?.username || 'Contacto'}</p>
+                    <p className="text-xs text-gray-500 mb-2">{s.emisor?.email || 'Correo no disponible'}</p>
                     <div className="flex gap-2">
-                      <button onClick={() => responderSolicitud(s.id, 'aceptado')}
+                      <button disabled={operandoContacto} onClick={() => responderSolicitud(s.id, 'aceptado')}
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 rounded text-xs">
                         Aceptar
                       </button>
-                      <button onClick={() => responderSolicitud(s.id, 'rechazado')}
+                      <button disabled={operandoContacto} onClick={() => responderSolicitud(s.id, 'rechazado')}
                         className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1 rounded text-xs">
                         Rechazar
                       </button>
@@ -1100,7 +1163,7 @@ export default function ChatPage() {
                 </div>
               );
             }
-            if (!clavesConfiguradas) return <AbrirConversacion nombre={nombreDestino || 'Conversación'} grupo={esGrupo} vig={claveVig} aes={claveAes} mostrar={mostrarClaves} busy={configurando} onVig={setClaveVig} onAes={setClaveAes} onMostrar={setMostrarClaves} onAbrir={() => void handleConfigurar()} onGrupo={abrirMiembros} />;
+            if (!clavesConfiguradas) return <AbrirConversacion nombre={nombreDestino || 'Conversación'} grupo={esGrupo} vig={claveVig} aes={claveAes} mostrar={mostrarClaves} busy={configurando} error={errorMensaje} onVig={setClaveVig} onAes={setClaveAes} onMostrar={setMostrarClaves} onAbrir={() => void handleConfigurar()} onGrupo={abrirMiembros} />;
             return (
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div className="chat-destino shrink-0 px-6 py-3 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
@@ -1152,6 +1215,7 @@ export default function ChatPage() {
                   </div>
                 )}
                 <p className="chat-cifrado"><IconoChat tipo="candado" size={14} />Conversación cifrada</p>
+                {errorSincronizacion && <p role="status" className="px-4 py-2 text-xs text-amber-200">{errorSincronizacion}</p>}
                 <div ref={mensajesRef} className="chat-mensajes flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 md:p-6 space-y-4">
                   {mensajes.filter(msg=>!vencido(msg.destruir_en)).length === 0 && <div className="chat-primer-mensaje"><IconoChat tipo="candado" size={28} /><h3>La conversación empieza acá</h3><p>Escribí el primer mensaje para comenzar.</p></div>}
                   {mensajes.filter(msg=>!vencido(msg.destruir_en)).map(msg => (
@@ -1179,7 +1243,7 @@ export default function ChatPage() {
                     <input value={mensaje} onChange={e => { setMensaje(e.target.value); notificarEscribiendo(); }}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && mensaje.trim() && !enviandoTexto) { e.preventDefault(); void handleEnviar(); } }}
                       className="min-w-0 flex-1 bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
-                      aria-label="Mensaje" placeholder="Escribí un mensaje…" />
+                      aria-label="Mensaje" maxLength={2000} placeholder="Escribí un mensaje…" />
                     <button type="button" disabled={!mensaje.trim() || enviandoTexto} onClick={handleEnviar} aria-label={enviandoTexto ? "Enviando mensaje" : "Enviar mensaje"}
                       className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-6 py-3 rounded-lg text-sm">
                       {enviandoTexto ? <span className="chat-enviando">Enviando…</span> : <IconoChat tipo="enviar" size={22} />}
